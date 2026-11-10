@@ -757,7 +757,7 @@ input[type=range]{width:100%}
   }
   function loadFromRaw(raw) {
     records = (raw.records || []).map(normRec); employees = raw.employees || []; settings = normSettings(raw.settings); stamp = raw.stamp || null; sigImg = raw.sig || null; pend = {};
-    gh = raw.gh || null; tombs = raw.tombs || []; syncMeta = Object.assign({ sT: '', last: '', err: '', ks: '' }, raw.syncMeta || {});
+    gh = null; tombs = raw.tombs || []; syncMeta = Object.assign({ sT: '', last: '', err: '', ks: '' }, raw.syncMeta || {});
     sortRecords(); sortEmps();
   }
   var webDl = { save: async function (o) {
@@ -854,7 +854,8 @@ input[type=range]{width:100%}
      Names, titles, departments, places, signature and stamp never leave this device.
      Everything else (dates, days, types, serials, settings) goes, encrypted with the same password, to one file on a data branch. */
   var gh = null, tombs = [], syncMeta = { sT: '', last: '', err: '', ks: '' }, pwMem = '', oldPw = '', quiet = false, syncP = null, syncAgain = false, syncTimer = null, DATA_FILE = 'data.enc';
-  function ghOn() { return !!(WEB && gh && gh.token && gh.repo); }
+  /* privacy: sync is switched off. Nothing leaves this device. */
+  function ghOn() { return false; }
   function addTomb(id) { tombs.push({ id: id, t: new Date().toISOString() }); if (tombs.length > 500) tombs = tombs.slice(-500); }
   function quietPersist() { quiet = true; try { webPersist(); } finally { quiet = false; } }
   function syncSoon(ms) {
@@ -1884,7 +1885,7 @@ input[type=range]{width:100%}
     if (WEB) {
       var ef = h('input', { type: 'file', id: 'imp-enc', class: 'in' }), ep = h('input', { class: 'in', id: 'imp-enc-pw', type: 'password', placeholder: 'پاسۆۆردا ڤی فایلی', autocomplete: 'off' });
       var op = h('input', { class: 'in', id: 'pw-old', type: 'password', placeholder: 'پاسۆۆردا نوکە', autocomplete: 'current-password' }), np = h('input', { class: 'in', id: 'pw-new', type: 'password', placeholder: 'پاسۆۆردا نوی (٨ پیت و زێدەتر)', autocomplete: 'new-password' });
-      prepBackup(); V.append(syncCard());
+      prepBackup();
       V.append(h('div', { class: 'card' }, h('h2', { text: 'کۆپییا پاراستنێ ب پاسۆۆرد' }),
         h('p', { class: 'hint', text: 'عەریز و کارمەند ل سەر ڤی ئامیری دهێنە پاراستن. کۆپییەکێ د «Files» یان iCloud دا بپارێزە. ئەڤ فایلە ب هەمان پاسۆۆرد هاتیە قفلکرن.' }),
         h('p', { class: 'hint', id: 'bk-state', text: unbacked() ? ar(unbacked()) + ' عەریزە ژ کۆپییا دوماهیێ نوینە.' : 'هەمی عەریز د کۆپییا دوماهیێ دا نە.' }),
