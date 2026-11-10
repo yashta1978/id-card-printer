@@ -820,6 +820,18 @@ input[type=range]{width:100%}
     try { await decWith(raw, oldp); } catch (e) { toast('پاسۆۆردا کەڤن یا خەلەتە'); return false; }
     var salt = crypto.getRandomValues(new Uint8Array(16)); encKey = await deriveKey(newp, salt); encSalt = salt; oldPw = oldp; pwMem = newp; await webFlush(); syncSoon(500); toast('پاسۆۆرد هاتە گوهۆڕین. کۆپییێن کەڤن هێشتا ب پاسۆۆردا کەڤن دهێنە کرن'); return true;
   }
+  /* backup to the Files app through the share sheet: the person picks the folder there (iOS remembers it) */
+  var bkFile = null;
+  async function prepBackup() {
+    bkFile = null;
+    if (!(WEB && encKey && window.File && navigator.canShare && navigator.share)) return;
+    try {
+      var blob = await encWith(encKey, encSalt, dataText({ app: 'petition', v: 9, exportedAt: new Date().toISOString() }));
+      var f = new File([JSON.stringify(blob)], 'petition-backup-' + dkey(today()) + '.enc', { type: 'application/octet-stream' });
+      if (navigator.canShare({ files: [f] })) { bkFile = f; ['#btn-bkshare', '#bk-share'].forEach(function (q) { var b = $(q); if (b) b.disabled = false; }); }
+    } catch (e) { }
+  }
+  function shareBackup() { if (!bkFile) return; navigator.share({ files: [bkFile] }).then(function () { markBackup(); if (view === 'more') renderMore(); }).catch(function () { }); }
   var shareFile = null;
   async function prepShare(rec) {
     shareFile = null;
@@ -1067,7 +1079,7 @@ input[type=range]{width:100%}
     F = newForm(F);
     if (e) pickEmp(e.name); else { F.name = r.name; F.title = r.title; F.dept = r.dept; F.place = r.place; }
     while (isOff(t) && g++ < 14) t = addD(t, 1);
-    F.type = r.type; F.hours = r.hours || 1; F.from = t; F.to = r.type === 'hourly' ? t : endOf(t, Math.max(1, r.days || 1));
+    F.type = r.type; F.hours = r.hours || 1; F.from = t; F.days = Math.max(1, r.days || 1);
     clearScan(); lastDone = null; setView('main'); step = 3; buildMain(); window.scrollTo(0, 0);
   }
   function buildScan(V) {
@@ -1168,11 +1180,12 @@ input[type=range]{width:100%}
   var F = null, ctl = {}, lastDone = null;
   function newForm(prev) {
     var t = today();
-    return { emp: '', isNew: false, name: '', title: '', dept: '', place: '', type: prev ? prev.type : 'annual', from: t, to: t, hours: 1 };
+    return { emp: '', isNew: false, name: '', title: '', dept: '', place: '', type: prev ? prev.type : 'annual', from: t, days: 1, hours: 1 };
   }
+  function nextWork(d) { var o = d, g = 0; while (isOff(o) && g++ < 30) o = addD(o, 1); return o; }
   function formState() {
-    var hourly = F.type === 'hourly', days = hourly ? 0 : (cmpD(F.to, F.from) < 0 ? 0 : workdays(F.from, F.to));
-    return { type: F.type, days: days, hours: F.hours, leave: F.from, write: today(), weekday: dow(F.from), place: trimName(F.place), title: trimName(F.title), name: trimName(F.name), dept: trimName(F.dept) };
+    var hourly = F.type === 'hourly', days = hourly ? 0 : Math.max(1, Math.round(+F.days) || 1), lv = hourly ? F.from : nextWork(F.from);
+    return { type: F.type, days: days, hours: F.hours, leave: lv, write: today(), weekday: dow(lv), place: trimName(F.place), title: trimName(F.title), name: trimName(F.name), dept: trimName(F.dept) };
   }
   function pickEmp(val) {
     F.emp = val;
@@ -1251,7 +1264,7 @@ input[type=range]{width:100%}
     ctl.dwrap = h('div', { id: 'f-dates' }); ctl.info = h('div', { id: 'f-info' });
     var seg = h('div', { class: 'seg', role: 'group', 'aria-label': 'جۆرێ مۆلەتێ' });
     ['annual', 'sick', 'hourly'].forEach(function (k) {
-      seg.append(h('button', { type: 'button', id: 'ty3-' + k, 'aria-pressed': String(F.type === k), text: TYPES[k].name, onclick: function () { if (F.type !== k) { F.type = k; F.to = F.from; buildMain(); } } }));
+      seg.append(h('button', { type: 'button', id: 'ty3-' + k, 'aria-pressed': String(F.type === k), text: TYPES[k].name, onclick: function () { if (F.type !== k) { F.type = k; buildMain(); } } }));
     });
     V.append(h('div', { class: 'card' }, h('div', { class: 'row', style: 'justify-content:space-between' }, backBtn(2)),
       h('h2', { style: 'margin-top:8px', text: F.name }), seg, ctl.dwrap, ctl.info, go));
@@ -1259,16 +1272,16 @@ input[type=range]{width:100%}
   }
   function paintDates() {
     var w = clear(ctl.dwrap), hourly = F.type === 'hourly';
-    var fromI = dateInput('f-from', F.from, function (p) {
-      F.from = p; if (hourly || cmpD(F.to, F.from) < 0) { F.to = p; var t = $('#f-to'); if (t) t.value = dkey(p); } syncMain();
-    });
+    var fromI = dateInput('f-from', F.from, function (p) { F.from = p; syncMain(); });
     if (hourly) {
       var hi = h('input', { class: 'in', id: 'f-hours', type: 'number', min: '1', max: '12', inputmode: 'numeric' }); hi.value = F.hours;
       hi.addEventListener('input', function () { var v = Math.round(+hi.value); F.hours = v >= 1 && v <= 12 ? v : 1; syncMain(); });
       w.append(h('div', { class: 'grid2' }, fld('ڕێکەفت', 'f-from', fromI), fld('ژمارا سەعەتان', 'f-hours', hi)));
     } else {
-      var toI = dateInput('f-to', F.to, function (p) { F.to = p; syncMain(); });
-      w.append(h('div', { class: 'grid2' }, fld('ژ ڕێکەفتی', 'f-from', fromI), fld('هەتا ڕێکەفتی', 'f-to', toI)));
+      var di = h('input', { class: 'in', id: 'f-nd', type: 'number', min: '1', max: '365', inputmode: 'numeric' }); di.value = Math.max(1, Math.round(+F.days) || 1);
+      di.addEventListener('input', function () { var v = Math.round(+di.value); F.days = v >= 1 && v <= 365 ? v : 1; syncMain(); });
+      di.addEventListener('change', function () { di.value = Math.max(1, Math.round(+F.days) || 1); });
+      w.append(h('div', { class: 'grid2' }, fld('ڕێکەفتا دەستپێکێ', 'f-from', fromI), fld('ژمارا ڕۆژان', 'f-nd', di)));
     }
   }
   function syncMain() {
@@ -1282,7 +1295,8 @@ input[type=range]{width:100%}
     else if (st.days > 0) {
       var endD = endOf(st.leave, st.days);
       main.append(h('div', {}, T('ژمارا ڕۆژان: '), h('b', { id: 'f-days', text: ar(st.days) + ' ڕۆژ' }), T(' · دەستپێک: '), h('b', { text: WEEK[st.weekday] })));
-      main.append(h('div', { class: 'hint' }, T('ڤەگەڕ بو کاری: '), ltr(fmtD(retAfter(endD)))));
+      main.append(h('div', { class: 'hint', id: 'f-end' }, T('هەتا: '), ltr(fmtD(endD)), T(' · ڤەگەڕ بو کاری: '), ltr(fmtD(retAfter(endD)))));
+      if (cmpD(st.leave, F.from) !== 0) main.append(h('div', { class: 'hint', id: 'f-shift' }, T('ڕێکەفتا دەستپێکێ ڕۆژا پشووێ بوو. هاتە گوهۆڕین بو: '), ltr(fmtD(st.leave))));
     } else main.append(h('div', { class: 'neg', id: 'f-days', text: 'د ڤان ڕێکەفتان دا چ ڕۆژێن کاری نینن.' }));
     var nm = st.name;
     if (nm && st.type === 'annual' && st.days > 0) {
@@ -1310,11 +1324,12 @@ input[type=range]{width:100%}
       h('div', { class: 'hint' }, T(rec.name + ' · ' + typeOf(rec.type).name + ' · '), ltr(fmtD(rec.leave)), T(' · ' + (hourly ? ar(rec.hours) + ' سەعەت' : ar(rec.days) + ' روژ'))),
       h('div', { class: 'row', style: 'margin-top:8px' },
         WEB && navigator.share ? h('button', { class: 'btn small', id: 'btn-share', type: 'button', disabled: true, text: 'بەلاڤکرن', onclick: function () { if (shareFile) navigator.share({ files: [shareFile] }).catch(function () { }); } }) : null,
+        WEB && navigator.share ? h('button', { class: 'btn small', id: 'btn-bkshare', type: 'button', disabled: true, text: 'پاراستن ل Files', onclick: shareBackup }) : null,
         btn('PDF دووبارە', '', async function () {
           try { var r = await deliver(rec); if (r === 'saved') toast('فایل هاتە پاشەکەفتکرن'); } catch (e) { toast('نەشیا فایل دروست بکەت'); }
         }, 'btn-again'),
         btn('عەریزەیەکا نوی', 'primary', function () { lastDone = null; F = newForm(F); step = 1; buildMain(); window.scrollTo(0, 0); }, 'btn-newp'))));
-    prepShare(rec);
+    prepShare(rec); prepBackup();
     box.scrollIntoView && box.scrollIntoView({ block: 'nearest' });
   }
   function firstMissing(st) {
@@ -1862,12 +1877,13 @@ input[type=range]{width:100%}
     if (WEB) {
       var ef = h('input', { type: 'file', id: 'imp-enc', class: 'in', accept: '.enc,application/octet-stream' }), ep = h('input', { class: 'in', id: 'imp-enc-pw', type: 'password', placeholder: 'پاسۆۆردا ڤی فایلی', autocomplete: 'off' });
       var op = h('input', { class: 'in', id: 'pw-old', type: 'password', placeholder: 'پاسۆۆردا نوکە', autocomplete: 'current-password' }), np = h('input', { class: 'in', id: 'pw-new', type: 'password', placeholder: 'پاسۆۆردا نوی (٨ پیت و زێدەتر)', autocomplete: 'new-password' });
-      V.append(syncCard());
+      prepBackup(); V.append(syncCard());
       V.append(h('div', { class: 'card' }, h('h2', { text: 'کۆپییا پاراستنێ ب پاسۆۆرد' }),
         h('p', { class: 'hint', text: 'عەریز و کارمەند ل سەر ڤی ئامیری دهێنە پاراستن. کۆپییەکێ د «Files» یان iCloud دا بپارێزە. ئەڤ فایلە ب هەمان پاسۆۆرد هاتیە قفلکرن.' }),
         h('p', { class: 'hint', id: 'bk-state', text: unbacked() ? ar(unbacked()) + ' عەریزە ژ کۆپییا دوماهیێ نوینە.' : 'هەمی عەریز د کۆپییا دوماهیێ دا نە.' }),
         h('div', { class: 'row', style: 'margin:10px 0' },
           h('button', { class: 'btn primary', id: 'bk-enc', type: 'button', text: 'کۆپییا پاراستنێ دروست بکە', onclick: async function () { await exportEnc(); renderMore(); } }),
+          navigator.share ? h('button', { class: 'btn', id: 'bk-share', type: 'button', disabled: true, text: 'پاراستن ل Files', onclick: shareBackup }) : null,
           h('button', { class: 'btn', id: 'bk-csv', type: 'button', text: 'هەمی عەریزان ب CSV', onclick: function () { saveFile('petitions-all-' + dkey(today()) + '.csv', csvOf(detailRows(records.slice().sort(byLeave)))); } })),
         fld('ڤەگەڕاندن ژ فایلەکێ (.enc)', 'imp-enc', ef), ep,
         h('button', { class: 'btn small', id: 'imp-enc-go', type: 'button', style: 'margin-top:8px', text: 'ڤەگەڕاندن', onclick: async function () {
