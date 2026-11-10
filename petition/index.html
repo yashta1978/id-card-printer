@@ -802,6 +802,9 @@ input[type=range]{width:100%}
       } catch (e) { toast(has ? 'پاسۆۆرد یا خەلەتە' : 'نەشیا دروست بکەت'); busy2 = false; goBtn.disabled = false; }
     }
     var goBtn = h('button', { class: 'btn primary big', id: 'lk-go', type: 'button', text: has ? 'ڤەکرن' : 'دروستکرن', onclick: go });
+    var useBio = has && bioSupported() && !!bioStored();
+    async function bioGo(silent) { try { var bp = await bioPassword(); pw.value = bp; await go(); } catch (e) { if (!silent) toast('Face ID سەرنەکەفت. پاسۆۆردی بنڤیسە'); } }
+    var bioBtn = useBio ? h('button', { class: 'btn big', id: 'lk-bio', type: 'button', style: 'margin-top:8px', text: 'ب Face ID ڤەکە', onclick: function () { bioGo(false); } }) : null;
     pw.addEventListener('keydown', function (e) { if (e.key === 'Enter' && has) go(); });
     var restore = h('details', { class: 'dd' }, h('summary', { text: 'ڤەگەڕاندن ژ کۆپییەکا پاراستنێ (.enc)' }),
       h('p', { class: 'hint', text: 'فایلی هەلبژێرە و پاسۆۆردا وێ ل سەرێ بنڤیسە.' }), rf,
@@ -811,14 +814,14 @@ input[type=range]{width:100%}
       } }));
     V.append(h('div', { class: 'card' }, h('h2', { text: has ? 'پاسۆۆردی بنڤیسە' : 'پاسۆۆردەکێ دروست بکە' }),
       h('p', { class: 'hint', text: has ? 'عەریزێن تە د ڤی ئامیری دا ب پاسۆۆردی هاتینە قفلکرن.' : 'هەمی عەریز و کارمەند ل سەر ڤی ئامیری دهێنە پاشەکەفتکرن و ب ڤی پاسۆۆردی دهێنە قفلکرن. ئەگەر تو ژبیر بکەی چ ڕێک بو ڤەگەڕاندنێ نینە.' }),
-      pw, has ? null : h('div', { style: 'margin-top:8px' }, pw2), h('div', { style: 'margin-top:10px' }, goBtn)), restore);
-    setTimeout(function () { pw.focus(); }, 50);
+      pw, has ? null : h('div', { style: 'margin-top:8px' }, pw2), h('div', { style: 'margin-top:10px' }, goBtn, bioBtn)), restore);
+    if (useBio) setTimeout(function () { bioGo(true); }, 350); else setTimeout(function () { pw.focus(); }, 50);
   }
   /* change the password: re-encrypts everything under a new key */
   async function changePassword(oldp, newp) {
     var raw = JSON.parse(localStorage.getItem(ENC_KEY) || 'null');
     try { await decWith(raw, oldp); } catch (e) { toast('پاسۆۆردا کەڤن یا خەلەتە'); return false; }
-    var salt = crypto.getRandomValues(new Uint8Array(16)); encKey = await deriveKey(newp, salt); encSalt = salt; oldPw = oldp; pwMem = newp; await webFlush(); syncSoon(500); toast('پاسۆۆرد هاتە گوهۆڕین. کۆپییێن کەڤن هێشتا ب پاسۆۆردا کەڤن دهێنە کرن'); return true;
+    var salt = crypto.getRandomValues(new Uint8Array(16)); encKey = await deriveKey(newp, salt); encSalt = salt; oldPw = oldp; pwMem = newp; bioOff(); await webFlush(); syncSoon(500); toast('پاسۆۆرد هاتە گوهۆڕین. کۆپییێن کەڤن هێشتا ب پاسۆۆردا کەڤن دهێنە کرن'); return true;
   }
   /* backup to the Files app through the share sheet: the person picks the folder there (iOS remembers it) */
   var bkFile = null;
@@ -1029,6 +1032,48 @@ input[type=range]{width:100%}
   }
 
 
+  /* ---------- Face ID unlock (WebAuthn + PRF). The password stays the master key; Face ID only releases it on this device. ---------- */
+  var BIO_KEY = 'petition-bio-v1', BIO_SALT = new TextEncoder().encode('petition-bio-salt-v1');
+  function bioSupported() { return !!(WEB && window.isSecureContext && window.PublicKeyCredential && navigator.credentials && navigator.credentials.create); }
+  function bioStored() { try { var o = JSON.parse(localStorage.getItem(BIO_KEY) || 'null'); return o && o.id && o.ct && o.iv ? o : null; } catch (e) { return null; } }
+  function bioOff() { try { localStorage.removeItem(BIO_KEY); } catch (e) { } }
+  async function bioPrf(rid) {
+    var a = await navigator.credentials.get({ publicKey: { challenge: crypto.getRandomValues(new Uint8Array(32)), rpId: location.hostname,
+      allowCredentials: [{ type: 'public-key', id: rid, transports: ['internal', 'hybrid'] }], userVerification: 'required', timeout: 60000, extensions: { prf: { eval: { first: BIO_SALT } } } } });
+    var r = a.getClientExtensionResults ? a.getClientExtensionResults() : {};
+    if (!(r.prf && r.prf.results && r.prf.results.first)) throw new Error('noprf');
+    return new Uint8Array(r.prf.results.first);
+  }
+  async function bioEnable() {
+    if (!bioSupported() || !pwMem) throw new Error('unsupported');
+    var cred = await navigator.credentials.create({ publicKey: { rp: { name: 'Petition', id: location.hostname }, user: { id: crypto.getRandomValues(new Uint8Array(16)), name: 'petition', displayName: 'petition' },
+      challenge: crypto.getRandomValues(new Uint8Array(32)), pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
+      authenticatorSelection: { authenticatorAttachment: 'platform', userVerification: 'required', residentKey: 'preferred' }, timeout: 60000, extensions: { prf: {} } } });
+    var ext = cred.getClientExtensionResults ? cred.getClientExtensionResults() : {};
+    if (!(ext.prf && ext.prf.enabled)) throw new Error('noprf');
+    var rid = new Uint8Array(cred.rawId), out = await bioPrf(rid);
+    var key = await crypto.subtle.importKey('raw', out, 'AES-GCM', false, ['encrypt']), iv = crypto.getRandomValues(new Uint8Array(12));
+    var ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv }, key, new TextEncoder().encode(pwMem));
+    localStorage.setItem(BIO_KEY, JSON.stringify({ id: b64e(rid), iv: b64e(iv), ct: b64e(new Uint8Array(ct)) }));
+  }
+  async function bioPassword() {
+    var o = bioStored(); if (!o) throw new Error('none');
+    var out = await bioPrf(b64d(o.id)), key = await crypto.subtle.importKey('raw', out, 'AES-GCM', false, ['decrypt']);
+    var pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64d(o.iv) }, key, b64d(o.ct));
+    return new TextDecoder().decode(pt);
+  }
+  function bioCard() {
+    var on = !!bioStored(), st = h('p', { class: 'hint', id: 'bio-state', text: !bioSupported() ? 'Face ID تنێ ل لینکێ https ل Safari دکار دکەت.' : on ? 'Face ID یێ چالاکە. پاسۆۆرد وەک ئێکەم کلیل دمینیت.' : 'Face ID نە چالاکە.' });
+    var btn_ = !bioSupported() ? null : on
+      ? h('button', { class: 'btn danger', id: 'bio-off', type: 'button', text: 'ڤەکوشتنا Face ID', onclick: function () { bioOff(); renderMore(); toast('Face ID هاتە ڤەکوشتن'); } })
+      : h('button', { class: 'btn primary', id: 'bio-on', type: 'button', text: 'چالاکرنا Face ID', onclick: async function () {
+          try { await bioEnable(); toast('Face ID هاتە چالاکرن'); renderMore(); }
+          catch (e) { toast(e && e.message === 'noprf' ? 'ئەڤ ئامێرە یان iOS پشتەڤانیا Face ID بو ڤی کاری ناکەت. پاسۆۆرد دمینیت' : 'Face ID نەهاتە چالاکرن'); }
+        } });
+    return h('div', { class: 'card' }, h('h2', { text: 'Face ID' }), st, btn_ ? h('div', { class: 'row', style: 'margin-top:8px' }, btn_) : null);
+  }
+
+
   /* ---------- small UI helpers ---------- */
   var toastTimer = null;
   function toast(msg) { var t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(function () { t.hidden = true; }, 4500); }
@@ -1132,7 +1177,7 @@ input[type=range]{width:100%}
     var cx = cv.getContext('2d'); cx.scale(S, S);
     var txt = [];
     drawPetition(cx, st, { family: FAMILY, L: curL(st.type), WEEK: WEEK, ar: ar, pad2: pad2, sigImg: imgs[0], stampImg: imgs[1],
-      serial: settings.showSerial ? serialText(st.serial) : '', qr: qrFor(st), txt: function (t, x, y, w) { txt.push({ t: t, x: x, y: y, w: w }); } });
+      serial: '', qr: qrFor(st), txt: function (t, x, y, w) { txt.push({ t: t, x: x, y: y, w: w }); } });
     if (!hasInk(cv)) throw new Error('empty-canvas');
     return { cv: cv, txt: txt };
   }
@@ -1734,7 +1779,7 @@ input[type=range]{width:100%}
     var imgs = await Promise.all([loadImg(st.useSig ? sigImg : null), loadImg(st.useStamp ? stamp : null)]);
     cv = $('#' + id); if (!cv) return;
     var cx = cv.getContext('2d'); cx.setTransform(1, 0, 0, 1, 0, 0);
-    drawPetition(cx, st, { family: FAMILY, L: curL(st.type), WEEK: WEEK, ar: ar, pad2: pad2, sigImg: imgs[0], stampImg: imgs[1], serial: settings.showSerial ? serialText(st.serial) : '', qr: qrFor(st) });
+    drawPetition(cx, st, { family: FAMILY, L: curL(st.type), WEEK: WEEK, ar: ar, pad2: pad2, sigImg: imgs[0], stampImg: imgs[1], serial: '', qr: qrFor(st) });
   }
   function txPreview() { return paintPreview('tx-prev', sampleSt(txType)); }
   function renderText(V) {
@@ -1790,9 +1835,27 @@ input[type=range]{width:100%}
     }
     V.append(h('div', { class: 'card' }, h('h2', { text: 'ڕۆژێن کاری و ڕەسید' }),
       h('div', { class: 'grid2' }, fld('ڕۆژا پشووا هەفتیێ', 'set-weekend', wk), fld('ڕەسیدێ مۆلەتا ساڵانە (ڕۆژ)', 'set-ent', en)),
-      chk('set-serial', 'ژمارا ڕیزبەند ل سەر عەریزێ نیشان بدە', 'showSerial'),
       chk('set-qr', 'QR ل بن عەریزێ نیشان بدە', 'showQr'),
       h('p', { class: 'hint', text: 'ڕەسیدێ ساڵانە ب بنەڕەت ٣٠ ڕۆژە. بو هەر کارمەندەکی دشێی ل بەشێ ئەرشیڤێ جودا بگوهۆڕی.' })));
+
+    /* serial counter: restart numbering without ever duplicating a number that still exists */
+    (function () {
+      var ys = {}; ys[TODAY.getFullYear()] = 1; Object.keys(settings.serials || {}).forEach(function (y) { ys[y] = 1; }); records.forEach(function (r) { if (r.serial) ys[r.serial.y] = 1; });
+      var years = Object.keys(ys).map(Number).sort(function (a, b) { return b - a; });
+      var sel = h('select', { class: 'in', id: 'sr-year' }, years.map(function (y) { return h('option', { value: y, text: ar(y) }); }));
+      var info = h('p', { class: 'hint', id: 'sr-info' });
+      function maxEx(y) { var m = 0; records.forEach(function (r) { if (r.serial && r.serial.y === y && r.serial.n > m) m = r.serial.n; }); return m; }
+      function paint() { var y = +sel.value; info.textContent = 'ژمارا عەریزا داهاتی: ' + ar(peekSerial(y).n) + ' · بلندترین ژمارا یا هەی: ' + ar(maxEx(y)); }
+      sel.addEventListener('change', function () { armed = false; rb.textContent = 'ڤەگەڕاندنا ژمارەیان'; paint(); });
+      var armed = false, rb = h('button', { class: 'btn danger', id: 'sr-reset', type: 'button', text: 'ڤەگەڕاندنا ژمارەیان', onclick: function () {
+        var y = +sel.value, nx = maxEx(y) + 1;
+        if (!armed) { armed = true; rb.textContent = 'دووبارە کلیک بکە: عەریزا داهاتی دێ ببیتە ' + ar(nx); setTimeout(function () { armed = false; rb.textContent = 'ڤەگەڕاندنا ژمارەیان'; }, 5000); return; }
+        armed = false; settings.serials[y] = maxEx(y); commitSettings(); rb.textContent = 'ڤەگەڕاندنا ژمارەیان'; paint(); toast('ژمارە هاتنە ڤەگەڕاندن');
+      } });
+      paint();
+      V.append(h('div', { class: 'card' }, h('h2', { text: 'ژمارا ڕیزبەند' }), h('div', { class: 'grid2' }, fld('ساڵ', 'sr-year', sel), h('div', {})), info, rb,
+        h('p', { class: 'hint', text: 'هەر ساڵەک ژ ١ دەست پێ دکەت. ڤەگەڕاندن ژمارا عەریزا داهاتی دکەتە پشتی بلندترین ژمارا یا هەی، و چ جارا ژمارەکا یا هەی دووبارە ناکەت.' })));
+    })();
 
     /* signature + stamp: set once, used on every petition */
     var file = h('input', { type: 'file', accept: 'image/*', id: 'stamp-file', class: 'in' });
@@ -1885,7 +1948,7 @@ input[type=range]{width:100%}
     if (WEB) {
       var ef = h('input', { type: 'file', id: 'imp-enc', class: 'in' }), ep = h('input', { class: 'in', id: 'imp-enc-pw', type: 'password', placeholder: 'پاسۆۆردا ڤی فایلی', autocomplete: 'off' });
       var op = h('input', { class: 'in', id: 'pw-old', type: 'password', placeholder: 'پاسۆۆردا نوکە', autocomplete: 'current-password' }), np = h('input', { class: 'in', id: 'pw-new', type: 'password', placeholder: 'پاسۆۆردا نوی (٨ پیت و زێدەتر)', autocomplete: 'new-password' });
-      prepBackup();
+      prepBackup(); V.append(bioCard());
       V.append(h('div', { class: 'card' }, h('h2', { text: 'کۆپییا پاراستنێ ب پاسۆۆرد' }),
         h('p', { class: 'hint', text: 'عەریز و کارمەند ل سەر ڤی ئامیری دهێنە پاراستن. کۆپییەکێ د «Files» یان iCloud دا بپارێزە. ئەڤ فایلە ب هەمان پاسۆۆرد هاتیە قفلکرن.' }),
         h('p', { class: 'hint', id: 'bk-state', text: unbacked() ? ar(unbacked()) + ' عەریزە ژ کۆپییا دوماهیێ نوینە.' : 'هەمی عەریز د کۆپییا دوماهیێ دا نە.' }),
@@ -1901,7 +1964,7 @@ input[type=range]{width:100%}
         h('div', { class: 'card' }, h('h2', { text: 'گوهۆڕینا پاسۆۆردی' }), op, h('div', { style: 'margin-top:8px' }, np),
           h('button', { class: 'btn small', id: 'pw-go', type: 'button', style: 'margin-top:8px', text: 'گوهۆڕین', onclick: async function () {
             if (np.value.length < 8) { toast('پاسۆۆرد دڤێت ٨ پیتان کێمتر نەبیت'); return; }
-            if (await changePassword(op.value, np.value)) { op.value = ''; np.value = ''; }
+            if (await changePassword(op.value, np.value)) { op.value = ''; np.value = ''; renderMore(); }
           } })));
       return;
     }
