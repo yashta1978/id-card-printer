@@ -94,6 +94,7 @@ input[type=range]{width:100%}
 
 (function () {
   'use strict';
+  var EMP = false;
 
   /* fonts load on the side, so a slow font host can never hold the page back */
   try {
@@ -461,7 +462,7 @@ input[type=range]{width:100%}
     (st.extras || []).forEach(function (x) { centered(dstr(x.d, '/'), x.x * W, x.y * H, 'ltr', false); });
     /* QR at the bottom right: opens this petition's page for the owner. Whole-unit modules keep it crisp. */
     if (cfg.qr) {
-      var qm = cfg.qr, qn = qm.length, md = 2, qz = 4, qs = (qn + 2 * qz) * md, qx = W - PADX - qs, qy = H - 34 - qs, qr_, qc_;
+      var qm = cfg.qr, qn = qm.length, md = qn > 61 ? 2.5 : 2, qz = 4, qs = (qn + 2 * qz) * md, qx = W - PADX - qs, qy = H - 34 - qs, qr_, qc_;
       ctx.fillStyle = '#ffffff'; ctx.fillRect(qx, qy, qs, qs); ctx.fillStyle = '#000000';
       for (qr_ = 0; qr_ < qn; qr_++) for (qc_ = 0; qc_ < qn; qc_++) if (qm[qr_][qc_]) ctx.fillRect(qx + (qc_ + qz) * md, qy + (qr_ + qz) * md, md, md);
       ctx.fillStyle = INK;
@@ -639,7 +640,7 @@ input[type=range]{width:100%}
     return makePdf(sheets.map(function (s) { return { jpeg: s.cv.toDataURL('image/jpeg', 0.95), txt: s.txt }; }), title, payload);
   }
 
-  /* ---------- tiny QR encoder (byte mode, error level M, versions 1-10) ---------- */
+  /* ---------- tiny QR encoder (byte mode, error level M, versions 1-20) ---------- */
   var QR = (function () {
     var EXP = new Array(512), LOG = new Array(256), i, x = 1;
     for (i = 0; i < 255; i++) { EXP[i] = x; LOG[x] = i; x <<= 1; if (x & 256) x ^= 0x11D; }
@@ -648,8 +649,8 @@ input[type=range]{width:100%}
     function rsGen(n) { var g = [1], k, j; for (k = 0; k < n; k++) { var ng = new Array(g.length + 1).fill(0); for (j = 0; j < g.length; j++) { ng[j] ^= g[j]; ng[j + 1] ^= mul(g[j], EXP[k]); } g = ng; } return g; }
     function rsEc(data, n) { var g = rsGen(n), r = new Array(n).fill(0), k, j; data.forEach(function (d) { var f = d ^ r[0]; r.shift(); r.push(0); for (j = 0; j < n; j++) r[j] ^= mul(g[j + 1], f); }); return r; }
     /* [ec codewords per block, blocks of [count, data codewords]] for level M */
-    var SPEC = [null, [10, [[1, 16]]], [16, [[1, 28]]], [26, [[1, 44]]], [18, [[2, 32]]], [24, [[2, 43]]], [16, [[4, 27]]], [18, [[4, 31]]], [22, [[2, 38], [2, 39]]], [22, [[3, 36], [2, 37]]], [26, [[4, 43], [1, 44]]]];
-    var ALIGN = [null, [], [6, 18], [6, 22], [6, 26], [6, 30], [6, 34], [6, 22, 38], [6, 24, 42], [6, 26, 46], [6, 28, 50]];
+    var SPEC = [null, [10, [[1, 16]]], [16, [[1, 28]]], [26, [[1, 44]]], [18, [[2, 32]]], [24, [[2, 43]]], [16, [[4, 27]]], [18, [[4, 31]]], [22, [[2, 38], [2, 39]]], [22, [[3, 36], [2, 37]]], [26, [[4, 43], [1, 44]]], [30, [[1, 50], [4, 51]]], [22, [[6, 36], [2, 37]]], [22, [[8, 37], [1, 38]]], [24, [[4, 40], [5, 41]]], [24, [[5, 41], [5, 42]]], [28, [[7, 45], [3, 46]]], [28, [[10, 46], [1, 47]]], [26, [[9, 43], [4, 44]]], [26, [[3, 44], [11, 45]]], [26, [[3, 41], [13, 42]]]];
+    var ALIGN = [null, [], [6, 18], [6, 22], [6, 26], [6, 30], [6, 34], [6, 22, 38], [6, 24, 42], [6, 26, 46], [6, 28, 50], [6, 30, 54], [6, 32, 58], [6, 34, 62], [6, 26, 46, 66], [6, 26, 48, 70], [6, 26, 50, 74], [6, 30, 54, 78], [6, 30, 56, 82], [6, 30, 58, 86], [6, 34, 62, 90]];
     function dataCap(v) { return SPEC[v][1].reduce(function (a, b) { return a + b[0] * b[1]; }, 0); }
     function bl(x) { return 32 - Math.clz32(x); }
     function bch(v, poly, deg) { var d = v << deg; while (bl(d) >= bl(poly)) d ^= poly << (bl(d) - bl(poly)); return d; }
@@ -657,8 +658,8 @@ input[type=range]{width:100%}
     function versionBits(v) { return (v << 12) | bch(v, 0x1F25, 12); }
     function encode(text) {
       var bytes = unescape(encodeURIComponent(text)).split('').map(function (c) { return c.charCodeAt(0); });
-      var v; for (v = 1; v <= 10; v++) if (bytes.length + (v < 10 ? 2 : 3) <= dataCap(v)) break;
-      if (v > 10) return null;
+      var v; for (v = 1; v <= 20; v++) if (bytes.length + (v < 10 ? 2 : 3) <= dataCap(v)) break;
+      if (v > 20) return null;
       var bits = [];
       function put(val, len) { for (var k = len - 1; k >= 0; k--) bits.push((val >> k) & 1); }
       put(4, 4); put(bytes.length, v < 10 ? 8 : 16); bytes.forEach(function (b) { put(b, 8); });
@@ -715,6 +716,7 @@ input[type=range]{width:100%}
       function penalty(G) {
         var p = 0, a, b2, run, dark = 0;
         for (a = 0; a < n; a++) { for (var dir = 0; dir < 2; dir++) { run = 1; for (b2 = 1; b2 < n; b2++) { var cur = dir ? G[b2][a] : G[a][b2], prev = dir ? G[b2 - 1][a] : G[a][b2 - 1]; if (cur === prev) { run++; if (run === 5) p += 3; else if (run > 5) p++; } else run = 1; } } }
+        for (a = 0; a < n; a++) for (var dr = 0; dr < 2; dr++) { var ln = ''; for (b2 = 0; b2 < n; b2++) ln += (dr ? G[b2][a] : G[a][b2]) ? '1' : '0'; var ix = -1; while ((ix = ln.indexOf('10111010000', ix + 1)) >= 0) p += 40; ix = -1; while ((ix = ln.indexOf('00001011101', ix + 1)) >= 0) p += 40; }
         for (a = 0; a < n - 1; a++) for (b2 = 0; b2 < n - 1; b2++) if (G[a][b2] === G[a + 1][b2] && G[a][b2] === G[a][b2 + 1] && G[a][b2] === G[a + 1][b2 + 1]) p += 3;
         for (a = 0; a < n; a++) for (b2 = 0; b2 < n; b2++) if (G[a][b2]) dark++;
         p += Math.floor(Math.abs(dark * 20 - n * n * 10) / (n * n)) * 10;
@@ -726,6 +728,59 @@ input[type=range]{width:100%}
     }
     return { encode: encode };
   })();
+
+
+  /* ---------- data QR: the petition itself travels inside the QR, so scanning it files it ---------- */
+  var QD_TYPES = ['annual', 'sick', 'hourly'];
+  function b64u(u) { return b64e(u).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
+  function b64uD(s) { s = String(s).replace(/-/g, '+').replace(/_/g, '/'); while (s.length % 4) s += '='; return b64d(s); }
+  async function qdPipe(u, stream) {
+    var w = stream.writable.getWriter(), nop = function () { }; w.write(u).catch(nop); w.close().catch(nop);
+    return new Uint8Array(await new Response(stream.readable).arrayBuffer());
+  }
+  function qdNum(d) { return d.y * 10000 + d.m * 100 + d.d; }
+  function qdDate(n) {
+    n = +n; if (!isFinite(n) || n < 20000101 || n > 21001231) return null;
+    var o = { y: Math.floor(n / 10000), m: Math.floor(n / 100) % 100, d: n % 100 };
+    return parseKey(dkey(o)) && dt(o).getDate() === o.d ? o : null;
+  }
+  function newXid() {
+    var a = new Uint8Array(6); try { crypto.getRandomValues(a); } catch (e) { for (var i = 0; i < 6; i++) a[i] = Math.floor(Math.random() * 256); }
+    return b64u(a);
+  }
+  /* rec -> "q.<base64url>" (deflate-raw when the browser has it and it is smaller) */
+  async function qdPack(rec) {
+    var hourly = rec.type === 'hourly';
+    var arr = [1, Math.max(0, QD_TYPES.indexOf(rec.type)), hourly ? rec.hours : rec.days, qdNum(rec.leave), qdNum(rec.write),
+      trimName(rec.name), trimName(rec.title), trimName(rec.dept), trimName(rec.place) === DEF_PLACE ? 0 : trimName(rec.place), rec.xid];
+    var raw = new TextEncoder().encode(JSON.stringify(arr)), flag = 0, body = raw;
+    try {
+      if (typeof CompressionStream !== 'undefined') {
+        var z = await qdPipe(raw, new CompressionStream('deflate-raw'));
+        if (z.length < raw.length) { flag = 1; body = z; }
+      }
+    } catch (e) { }
+    var out = new Uint8Array(body.length + 1); out[0] = flag; out.set(body, 1);
+    return 'q.' + b64u(out);
+  }
+  /* "q.<base64url>" -> petition fields, or null when it is not a valid petition QR */
+  async function qdUnpack(s) {
+    try {
+      var m = /^q\.([A-Za-z0-9_-]{8,6000})$/.exec(s || ''); if (!m) return null;
+      var u = b64uD(m[1]), body = u.subarray(1);
+      if (u[0] === 1) body = await qdPipe(body, new DecompressionStream('deflate-raw'));
+      else if (u[0] !== 0) return null;
+      var a = JSON.parse(new TextDecoder('utf-8').decode(body));
+      if (!Array.isArray(a) || a[0] !== 1) return null;
+      var type = QD_TYPES[a[1]], n = Math.round(+a[2]), lv = qdDate(a[3]), wr = qdDate(a[4]);
+      var str = function (x, mx) { return typeof x === 'string' ? trimName(x).slice(0, mx) : ''; };
+      var o = { type: type, n: n, leave: lv, write: wr, name: str(a[5], 80), title: str(a[6], 80), dept: str(a[7], 80), place: a[8] === 0 ? DEF_PLACE : str(a[8], 80), xid: str(a[9], 16) };
+      if (!type || !lv || !wr || !o.name || !o.title || !o.dept || !o.place || !/^[A-Za-z0-9_-]{6,16}$/.test(o.xid)) return null;
+      if (type === 'hourly' ? !(n >= 1 && n <= 12) : !(n >= 1 && n <= 365)) return null;
+      return o;
+    } catch (e) { return null; }
+  }
+  function qHash() { var m = /^#?(q\.[A-Za-z0-9_-]+)$/.exec(location.hash || ''); return m ? m[1] : null; }
 
 
   /* ---------- web build: everything stays on this device, encrypted with a password ---------- */
@@ -1120,10 +1175,12 @@ input[type=range]{width:100%}
     return ('0000' + (hh & 0xFFFF).toString(16)).slice(-4);
   }
   function qrUrl(rec) { return APP_URL + '#p-' + rec.serial.y + '-' + pad4(rec.serial.n) + '-' + qrCode(rec); }
-  function qrFor(rec) { if (!settings.showQr || !rec || !rec.serial) return null; try { return QR.encode(qrUrl(rec)); } catch (e) { return null; } }
+  var empQm = null; /* employee page: the data QR of the petition being made */
+  function qrFor(rec) { if (EMP) return empQm; if (!settings.showQr || !rec || !rec.serial) return null; try { return QR.encode(qrUrl(rec)); } catch (e) { return null; } }
   function parseScan() { var m = /^#?p-(\d{4})-(\d{4})-([0-9a-f]{4})$/.exec(location.hash || ''); return m ? { y: +m[1], n: +m[2], code: m[3] } : null; }
   var scan = null, scanLoading = false;
-  function clearScan() { scan = null; try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { } }
+  var qscan = null;
+  function clearScan() { scan = null; qscan = null; try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { } }
   function findBySerial(sc) { for (var i = 0; i < records.length; i++) { var r = records[i]; if (r.serial && r.serial.y === sc.y && r.serial.n === sc.n) return r; } return null; }
   function startNewFor(r) {
     var e = empOf(r); F = newForm(F);
@@ -1169,6 +1226,70 @@ input[type=range]{width:100%}
     card.append(h('button', { class: 'btn big', id: 'sc-new', type: 'button', style: 'margin-top:8px', text: 'عەریزەیەکا نوی بو ڤی کارمەندی', onclick: function () { startNewFor(r); } }));
     card.append(h('div', { class: 'row', style: 'margin-top:8px' }, btn('دەستپێک', '', home, 'sc-home')));
     V.append(card);
+  }
+
+  /* ---------- a petition arrives inside its QR: show it, then file it ---------- */
+  function recByXid(x) { for (var i = 0; i < records.length; i++) if (records[i].xid && records[i].xid === x) return records[i]; return null; }
+  function qApply() {
+    var hs = qHash(); if (!hs) return;
+    qdUnpack(hs).then(function (o) {
+      try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { }
+      if (!o) { toast('ئەڤ QR ناهێتە خواندن یان یێ نەتەمامە'); return; }
+      var ex = recByXid(o.xid);
+      if (ex && ex.serial) { scan = { y: ex.serial.y, n: ex.serial.n, code: qrCode(ex) }; qscan = null; }
+      else { scan = null; qscan = o; }
+      if (view === 'more') setView('main'); else buildMain();
+      window.scrollTo(0, 0);
+    });
+  }
+  function buildQScan(V) {
+    var o = qscan, hourly = o.type === 'hourly', card = h('div', { class: 'card', id: 'qscan' }, h('h2', { text: 'عەریزەکا نوی ژ QR هات' }));
+    function home() { clearScan(); step = 1; buildMain(); window.scrollTo(0, 0); }
+    var rows = h('div', { class: 'info' });
+    rows.append(h('div', {}, h('b', { text: o.name }), T(' · ' + typeOf(o.type).name)));
+    rows.append(h('div', { class: 'hint', text: [o.title, o.dept, o.place].join(' · ') }));
+    if (hourly) rows.append(h('div', {}, ltr(fmtD(o.leave)), T(' · ' + ar(o.n) + ' سەعەت')));
+    else {
+      var endD = endOf(nextWork(o.leave), o.n);
+      rows.append(h('div', {}, ltr(fmtD(nextWork(o.leave)) + ' → ' + fmtD(endD)), T(' · ' + ar(o.n) + ' روژ')));
+      rows.append(h('div', { class: 'hint' }, T('ڤەگەڕ بو کاری: '), ltr(fmtD(retAfter(endD)))));
+    }
+    rows.append(h('div', { class: 'hint' }, T('هاتیە نڤیسین: '), ltr(fmtD(o.write))));
+    if (!hourly && o.type === 'annual') {
+      var ent = entOf(o.name), used = usedDays(o.name, o.leave.y, null), left = ent - used - o.n;
+      rows.append(h('div', { class: 'hint', id: 'q-bal' }, T('ڕەسید: ' + ar(ent) + ' · بکارهاتی: ' + ar(used) + ' · پشتی ڤێ: '), h('b', { class: left < 0 ? 'neg' : '', text: ar(left) })));
+      if (left < 0) rows.append(alertBox('ڕەسیدێ مۆلەتێ ناهەیە: ' + ar(-left) + ' ڕۆژ زێدەتر.', false));
+    }
+    if (!hourly) {
+      var ov = overlaps(o.name, { type: o.type, leave: nextWork(o.leave), days: o.n }, null);
+      if (ov.length) rows.append(alertBox('ئەڤ ماوە دگەل مۆلەتەکا بەری نوکە دکەڤیتە ئێک: ' + fmtD(ov[0].a) + ' — ' + fmtD(ov[0].b), false));
+    }
+    card.append(rows);
+    card.append(h('button', { class: 'btn big primary', id: 'q-save', type: 'button', style: 'margin-top:10px', text: 'پاراستن د ئەرشیڤێ دا', onclick: qSave }));
+    card.append(h('div', { class: 'row', style: 'margin-top:8px' }, btn('هەلوەشاندن', '', home, 'q-cancel')));
+    V.append(card);
+  }
+  async function qSave() {
+    var o = qscan; if (!o || busy) return;
+    busy = true;
+    try {
+      var ex = recByXid(o.xid);
+      if (!ex) {
+        var hourly = o.type === 'hourly', e = ensureEmployee({ name: o.name, title: o.title, dept: o.dept, place: o.place }, true), now = new Date().toISOString(), w = o.write;
+        var ser = nextSerial(w.y);
+        var lv = hourly ? o.leave : nextWork(o.leave);
+        ex = normRec({ id: uid('p_'), createdAt: now, updatedAt: now, type: o.type, days: hourly ? 0 : o.n, hours: hourly ? o.n : 1,
+          leave: { y: lv.y, m: lv.m, d: lv.d }, write: { y: w.y, m: w.m, d: w.d }, weekday: dow(lv),
+          place: o.place, title: o.title, name: o.name, dept: o.dept, empId: e.id, serial: ser, xid: o.xid,
+          useSig: settings.useSig, useStamp: settings.useStamp, sigPos: null, stampPos: null, sigScale: 1, stampScale: 1,
+          extras: (settings.extras || []).map(function (x) { return { id: uid('x_'), d: { y: w.y, m: w.m, d: w.d }, x: x.x, y: x.y, auto: false }; }) });
+        upsert(records, ex); sortRecords(); await saveRec(ex);
+        toast('عەریزە هاتە پاراستن');
+      }
+      qscan = null; scan = { y: ex.serial.y, n: ex.serial.n, code: qrCode(ex) };
+      buildMain(); window.scrollTo(0, 0);
+    } catch (er) { toast('نەشیا پاشەکەفت بکەت، دووبارە هەول بدە'); }
+    finally { busy = false; }
   }
 
   /* ---------- the sheet ---------- */
@@ -1261,9 +1382,10 @@ input[type=range]{width:100%}
   }
   function backBtn(to) { return h('button', { class: 'btn small', type: 'button', id: 'btn-back', text: '→ ڤەگەڕ', onclick: function () { step = to; buildMain(); window.scrollTo(0, 0); } }); }
   function buildMain() {
-    if (WEB && !encKey) return;
+    if (WEB && !encKey && !EMP) return;
     var V = clear($('#v-main'));
     ctl = {};
+    if (qscan) { buildQScan(V); return; }
     if (scan) { buildScan(V); return; }
     if (step === 1) buildStep1(V); else if (step === 2) buildStep2(V); else buildStep3(V);
     if (step === 1 && lastDone) showDone(lastDone.rec, lastDone.how);
@@ -1292,7 +1414,7 @@ input[type=range]{width:100%}
     impIn.addEventListener('change', function () { if (impIn.files && impIn.files[0]) importPdf(impIn.files[0]); impIn.value = ''; });
     var drop = h('div', { class: 'drop', id: 'drop' }, T('PDFـەکا ژ ڤی ئەپی دروستکری ل ڤێرە بهاڤێژە یان '),
       h('button', { class: 'btn small', id: 'btn-imp', type: 'button', text: 'هەلبژێرە', onclick: function () { impIn.click(); } }), impIn);
-    V.append(card, h('div', { id: 'f-done' }), drop);
+    V.append(card, h('div', { id: 'f-done' })); if (!EMP) V.append(drop);
   }
   /* step 2: which petition */
   function buildStep2(V) {
@@ -1303,7 +1425,7 @@ input[type=range]{width:100%}
     if (!F.title || !F.dept || !F.place) det.open = true;
     ctl.det = det;
     var card = h('div', { class: 'card' }, h('div', { class: 'row', style: 'justify-content:space-between' }, backBtn(1)), h('h2', { style: 'margin-top:8px', text: F.name }), det,
-      h('div', { class: 'hint', id: 'f-bal0' }, T('ڕەسید: ' + ar(ent) + ' · بکارهاتی ' + ar(TODAY.getFullYear()) + ': ' + ar(used) + ' · مای: '), h('b', { class: ent - used < 0 ? 'neg' : '', text: ar(ent - used) })),
+      EMP ? null : h('div', { class: 'hint', id: 'f-bal0' }, T('ڕەسید: ' + ar(ent) + ' · بکارهاتی ' + ar(TODAY.getFullYear()) + ': ' + ar(used) + ' · مای: '), h('b', { class: ent - used < 0 ? 'neg' : '', text: ar(ent - used) })),
       h('h2', { style: 'margin-top:14px', text: 'کیژ عەریزە دڤێ؟' }));
     ['annual', 'sick', 'hourly'].forEach(function (k) {
       card.append(h('button', { class: 'btn big', type: 'button', id: 'ty-' + k, style: 'margin-bottom:8px', text: TYPES[k].name, onclick: function () {
@@ -1355,7 +1477,7 @@ input[type=range]{width:100%}
       main.append(h('div', { class: 'hint', id: 'f-end' }, T('هەتا: '), ltr(fmtD(endD)), T(' · ڤەگەڕ بو کاری: '), ltr(fmtD(retAfter(endD)))));
       if (cmpD(st.leave, F.from) !== 0) main.append(h('div', { class: 'hint', id: 'f-shift' }, T('ڕێکەفتا دەستپێکێ ڕۆژا پشووێ بوو. هاتە گوهۆڕین بو: '), ltr(fmtD(st.leave))));
     } else main.append(h('div', { class: 'neg', id: 'f-days', text: 'د ڤان ڕێکەفتان دا چ ڕۆژێن کاری نینن.' }));
-    var nm = st.name;
+    var nm = EMP ? '' : st.name;
     if (nm && st.type === 'annual' && st.days > 0) {
       var ent = entOf(nm), used = usedDays(nm, st.leave.y, null), left = ent - used - st.days;
       main.append(h('div', { class: 'hint', id: 'f-bal' }, T('ڕەسید: ' + ar(ent) + ' · بکارهاتی: ' + ar(used) + ' · پشتی ڤێ: '), h('b', { class: left < 0 ? 'neg' : '', text: ar(left) })));
@@ -1365,7 +1487,7 @@ input[type=range]{width:100%}
       var ov = overlaps(nm, { type: st.type, leave: st.leave, days: st.days }, null);
       if (ov.length) main.append(alertBox('ئەڤ ماوە دگەل مۆلەتەکا بەری نوکە دکەڤیتە ئێک: ' + fmtD(ov[0].a) + ' — ' + fmtD(ov[0].b), false));
     }
-    main.append(h('div', { class: 'hint' }, T('ئەڤرو: '), ltr(fmtD(st.write)), T(' · ژمارە: '), ltr(serialText(ser))));
+    main.append(h('div', { class: 'hint' }, T('ئەڤرو: '), ltr(fmtD(st.write)), EMP ? null : T(' · ژمارە: '), EMP ? null : ltr(serialText(ser))));
     box.append(main);
   }
   function showDone(rec, how) {
@@ -1374,19 +1496,20 @@ input[type=range]{width:100%}
     var msg = how === 'declined' ? 'عەریزە هاتە پاشەکەفتکرن، بەلێ فایلی PDF نەهاتە پاشەکەفتکرن.'
       : how === 'viewer' ? 'عەریزە هاتە پاشەکەفتکرن. کۆپییا چاپکرنێ ڤەبوو.'
       : how === 'imported' ? 'عەریزە ژ PDFـێ هاتە ئینان و د ئەرشیڤێ دا هاتە دانان.'
+      : EMP ? 'عەریزە ئامادەیە. PDF بپارێزە و چاپ بکە. QR ل سەر کاغەزێ داتایێن عەریزێ تێدایە.'
       : 'عەریزە هاتە پاشەکەفتکرن و PDF ئامادەیە.';
     box.append(h('div', { class: 'done', id: 'done' },
-      h('div', { class: 'sn' }, ltr(serialText(rec.serial))),
+      EMP ? null : h('div', { class: 'sn' }, ltr(serialText(rec.serial))),
       h('div', { text: msg }),
       h('div', { class: 'hint' }, T(rec.name + ' · ' + typeOf(rec.type).name + ' · '), ltr(fmtD(rec.leave)), T(' · ' + (hourly ? ar(rec.hours) + ' سەعەت' : ar(rec.days) + ' روژ'))),
       h('div', { class: 'row', style: 'margin-top:8px' },
         WEB && navigator.share ? h('button', { class: 'btn small', id: 'btn-share', type: 'button', disabled: true, text: 'بەلاڤکرن', onclick: function () { if (shareFile) navigator.share({ files: [shareFile] }).catch(function () { }); } }) : null,
-        WEB ? h('button', { class: 'btn small', id: 'btn-bkshare', type: 'button', text: 'پاراستن ل Files', onclick: shareBackup }) : null,
+        WEB && !EMP ? h('button', { class: 'btn small', id: 'btn-bkshare', type: 'button', text: 'پاراستن ل Files', onclick: shareBackup }) : null,
         btn('PDF دووبارە', '', async function () {
           try { var r = await deliver(rec); if (r === 'saved') toast('فایل هاتە پاشەکەفتکرن'); } catch (e) { toast('نەشیا فایل دروست بکەت'); }
         }, 'btn-again'),
         btn('عەریزەیەکا نوی', 'primary', function () { lastDone = null; F = newForm(F); step = 1; buildMain(); window.scrollTo(0, 0); }, 'btn-newp'))));
-    prepShare(rec); prepBackup();
+    prepShare(rec); if (!EMP) prepBackup();
     box.scrollIntoView && box.scrollIntoView({ block: 'nearest' });
   }
   function firstMissing(st) {
@@ -1405,6 +1528,23 @@ input[type=range]{width:100%}
     if (st.type !== 'hourly' && st.days < 1) { toast('د ڤان ڕێکەفتان دا چ ڕۆژێن کاری نینن'); return; }
     busy = true; ctl.go.disabled = true; var label = ctl.go.textContent; ctl.go.textContent = 'PDF دهێتە دروستکرن…';
     var rec = null;
+    if (EMP) {
+      try {
+        var nowE = new Date().toISOString(), hE = st.type === 'hourly', wE = st.write;
+        rec = normRec({ id: uid('p_'), createdAt: nowE, updatedAt: nowE, type: st.type, days: hE ? 0 : st.days, hours: st.hours,
+          leave: { y: st.leave.y, m: st.leave.m, d: st.leave.d }, write: { y: wE.y, m: wE.m, d: wE.d }, weekday: st.weekday,
+          place: st.place, title: st.title, name: st.name, dept: st.dept, empId: null, serial: null, xid: newXid(),
+          useSig: false, useStamp: false, sigPos: null, stampPos: null, sigScale: 1, stampScale: 1, extras: [] });
+        empQm = QR.encode(APP_URL + '#' + await qdPack(rec));
+        if (!empQm) { toast('زانیاری گەلەک درێژن و QR ناهێتە چێکرن. ناڤ و زانیارییان کورتتر بکە.'); return; }
+        var howE = 'saved';
+        try { howE = await deliver(rec); } catch (erE) { howE = 'declined'; toast('نەشیا PDF دروست بکەت. دووبارە هەول بدە.'); }
+        lastDone = { rec: rec, how: howE === 'failed' ? 'declined' : howE };
+        F = newForm(F); step = 1; buildMain();
+      } catch (erE2) { toast('نەشیا PDF دروست بکەت. دووبارە هەول بدە.'); }
+      finally { busy = false; if (ctl.go) { ctl.go.disabled = false; ctl.go.textContent = 'PDF'; } }
+      return;
+    }
     try {
       if (ghOn()) { try { await Promise.race([syncNow(), new Promise(function (res) { setTimeout(res, 6000); })]); } catch (e0) { } }
       var e = ensureEmployee(st, false);
@@ -1447,6 +1587,7 @@ input[type=range]{width:100%}
     var r = o.rec;
     if (!r || !r.leave || !r.write || !trimName(r.name)) { toast('داتایێن ڤی PDFـی نەتەمامن'); return; }
     var n = normRec(r), ex = n.id ? recById(n.id) : null;
+    if (!ex && n.xid) records.forEach(function (x) { if (x.xid === n.xid) ex = x; });
     if (!ex && n.serial) records.forEach(function (x) { if (x.serial && x.serial.y === n.serial.y && x.serial.n === n.serial.n && trimName(x.name) === trimName(n.name) && same(x.leave, n.leave)) ex = x; });
     if (ex) { lastDone = { rec: ex, how: 'imported' }; toast('ئەڤ عەریزە بەری نوکە د ئەرشیڤێ دا هەیە'); step = 1; buildMain(); return; }
     var e = ensureEmployee({ name: n.name, title: n.title, dept: n.dept, place: n.place }, true);
@@ -2045,10 +2186,13 @@ input[type=range]{width:100%}
     scan = parseScan(); scanLoading = !!scan && !WEB;
     refreshLists(); buildMain();
     ready = true;
+    if (!EMP) qApply();
   }
   function start() {
-    WEB = !(window.claude && window.claude.use) && !!(window.crypto && crypto.subtle);
+    WEB = EMP || (!(window.claude && window.claude.use) && !!(window.crypto && crypto.subtle));
     if (WEB) { dl = webDl; APP_URL = location.href.split('#')[0]; }
+    if (EMP) APP_URL = location.origin + location.pathname.replace(/employee\/(index\.html)?$/, '');
+    if (EMP) $('#btn-more').style.display = 'none';
     $('#btn-more').addEventListener('click', function () { setView(view === 'more' ? 'main' : 'more'); });
     $('#viewer-close').addEventListener('click', closeViewer);
     $('#modal').addEventListener('click', function (e) { if (e.target === $('#modal')) closeModal(); });
@@ -2065,7 +2209,8 @@ input[type=range]{width:100%}
     });
     document.addEventListener('visibilitychange', function () { if (document.hidden && WEB) webFlush(); else if (!document.hidden) { if (WEB && ghOn()) syncSoon(800); if (view === 'main' && !busy) TODAY = new Date(); } });
     window.addEventListener('pagehide', function () { if (WEB) webFlush(); });
-    window.addEventListener('hashchange', function () { if (WEB && !encKey) return; var s = parseScan(); if (s) { scan = s; scanLoading = false; if (view === 'more') setView('main'); else buildMain(); window.scrollTo(0, 0); } });
+    window.addEventListener('hashchange', function () { if (WEB && !encKey) return; if (qHash()) { qApply(); return; } var s = parseScan(); if (s) { scan = s; scanLoading = false; if (view === 'more') setView('main'); else buildMain(); window.scrollTo(0, 0); } });
+    if (EMP) { boot(); return; }
     if (WEB) {
       try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) { }
       unlockFlow(function () {
