@@ -184,14 +184,17 @@ input[type=range]{width:100%}
   }
 
   /* ---------- state ---------- */
+  var DEF_PLACE = 'سنورێ ئیدارا سەربەخویا زاخو';
+  function defPlace() { return (typeof settings !== 'undefined' && settings && settings.place) || DEF_PLACE; }
   function defSettings() {
-    return { weekend: 'frisat', holidays: [], entitlement: 30, showSerial: true, showQr: true, useSig: true, useStamp: true, extras: [], types: {}, common: {}, serials: {} };
+    return { place: '', weekend: 'frisat', holidays: [], entitlement: 30, showSerial: true, showQr: true, useSig: true, useStamp: true, extras: [], types: {}, common: {}, serials: {} };
   }
   function normSettings(o) {
     var d = defSettings(); o = o || {};
     if (['fri', 'frisat', 'none'].indexOf(o.weekend) >= 0) d.weekend = o.weekend;
     if (Array.isArray(o.holidays)) d.holidays = o.holidays.filter(function (x) { return x && parseKey(x.d); }).map(function (x) { return { d: x.d, n: String(x.n || '') }; });
     if (typeof o.entitlement === 'number' && o.entitlement >= 0 && o.entitlement <= 366) d.entitlement = o.entitlement;
+    if (typeof o.place === 'string' && o.place.trim()) d.place = o.place.trim().slice(0, 80);
     if (typeof o.showSerial === 'boolean') d.showSerial = o.showSerial;
     if (typeof o.showQr === 'boolean') d.showQr = o.showQr;
     if (typeof o.useSig === 'boolean') d.useSig = o.useSig;
@@ -1124,13 +1127,14 @@ input[type=range]{width:100%}
   function findBySerial(sc) { for (var i = 0; i < records.length; i++) { var r = records[i]; if (r.serial && r.serial.y === sc.y && r.serial.n === sc.n) return r; } return null; }
   function startNewFor(r) {
     var e = empOf(r); F = newForm(F);
-    if (e) pickEmp(e.name); else { F.name = r.name; F.title = r.title; F.dept = r.dept; F.place = r.place; }
+    if (e) pickEmp(e.name); else { F.name = r.name; F.title = r.title; F.dept = r.dept; }
     clearScan(); step = 2; buildMain(); window.scrollTo(0, 0);
   }
   function startCopyFor(r) {
     var e = empOf(r), t = today(), g = 0;
     F = newForm(F);
-    if (e) pickEmp(e.name); else { F.name = r.name; F.title = r.title; F.dept = r.dept; F.place = r.place; }
+    if (e) pickEmp(e.name); else { F.name = r.name; F.title = r.title; F.dept = r.dept; }
+    F.place = r.place || defPlace();
     while (isOff(t) && g++ < 14) t = addD(t, 1);
     F.type = r.type; F.hours = r.hours || 1; F.from = t; F.days = Math.max(1, r.days || 1);
     clearScan(); lastDone = null; setView('main'); step = 3; buildMain(); window.scrollTo(0, 0);
@@ -1233,7 +1237,7 @@ input[type=range]{width:100%}
   var F = null, ctl = {}, lastDone = null;
   function newForm(prev) {
     var t = today();
-    return { emp: '', isNew: false, name: '', title: '', dept: '', place: '', type: prev ? prev.type : 'annual', from: t, days: 1, hours: 1 };
+    return { emp: '', isNew: false, name: '', title: '', dept: '', place: defPlace(), type: prev ? prev.type : 'annual', from: t, days: 1, hours: 1 };
   }
   function nextWork(d) { var o = d, g = 0; while (isOff(o) && g++ < 30) o = addD(o, 1); return o; }
   function formState() {
@@ -1242,11 +1246,11 @@ input[type=range]{width:100%}
   }
   function pickEmp(val) {
     F.emp = val;
-    if (val === '__new' || !val) { F.isNew = true; F.name = ''; F.title = ''; F.dept = ''; F.place = ''; }
+    if (val === '__new' || !val) { F.isNew = true; F.name = ''; F.title = ''; F.dept = ''; F.place = defPlace(); }
     else {
       F.isNew = false;
       var e = findEmpByName(val);
-      if (e) { F.name = e.name; F.title = e.title || ''; F.dept = e.dept || ''; F.place = e.place || ''; }
+      if (e) { F.name = e.name; F.title = e.title || ''; F.dept = e.dept || ''; F.place = defPlace(); }
     }
   }
   var step = 1;
@@ -1835,6 +1839,11 @@ input[type=range]{width:100%}
     }
     V.append(h('div', { class: 'card' }, h('h2', { text: 'ڕۆژێن کاری و ڕەسید' }),
       h('div', { class: 'grid2' }, fld('ڕۆژا پشووا هەفتیێ', 'set-weekend', wk), fld('ڕەسیدێ مۆلەتا ساڵانە (ڕۆژ)', 'set-ent', en)),
+      (function () {
+        var pl = h('input', { class: 'in', id: 'set-place', type: 'text', maxlength: '80', autocomplete: 'off', placeholder: DEF_PLACE }); pl.value = settings.place || DEF_PLACE;
+        pl.addEventListener('change', function () { var v = pl.value.trim(); settings.place = (v && v !== DEF_PLACE) ? v : ''; pl.value = settings.place || DEF_PLACE; commitSettings(); });
+        return h('div', { style: 'margin-top:10px' }, fld('جهێ کاری یێ ب بنەڕەت', 'set-place', pl), h('p', { class: 'hint', text: 'د هەر عەریزەکا نوی دا ئەڤ جه ب خوەڕا دهێتە نڤێسین. ئەگەر عەریزەک بو جەهەکێ دی بیت، تنێ د ڤێ عەریزێ دا بگوهۆڕە.' }));
+      })(),
       chk('set-qr', 'QR ل بن عەریزێ نیشان بدە', 'showQr'),
       h('p', { class: 'hint', text: 'ڕەسیدێ ساڵانە ب بنەڕەت ٣٠ ڕۆژە. بو هەر کارمەندەکی دشێی ل بەشێ ئەرشیڤێ جودا بگوهۆڕی.' })));
 
