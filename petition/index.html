@@ -786,7 +786,7 @@ input[type=range]{width:100%}
     var has = !!(raw && raw.ct), busy2 = false;
     var pw = h('input', { class: 'in', id: 'lk-pw', type: 'password', autocomplete: has ? 'current-password' : 'new-password', placeholder: 'پاسۆۆرد' });
     var pw2 = h('input', { class: 'in', id: 'lk-pw2', type: 'password', autocomplete: 'new-password', placeholder: 'پاسۆۆرد دووبارە بنڤیسە' });
-    var rf = h('input', { type: 'file', id: 'lk-file', class: 'in', accept: '.enc,application/octet-stream' });
+    var rf = h('input', { type: 'file', id: 'lk-file', class: 'in' });
     function open_(r) { encKey = r.key; encSalt = r.salt; pwMem = pw.value; $('#btn-more').hidden = false; webFlush().then(function () { done(); }); }
     async function go() {
       if (busy2) return; var p = pw.value;
@@ -827,11 +827,18 @@ input[type=range]{width:100%}
     if (!(WEB && encKey && window.File && navigator.canShare && navigator.share)) return;
     try {
       var blob = await encWith(encKey, encSalt, dataText({ app: 'petition', v: 9, exportedAt: new Date().toISOString() }));
-      var f = new File([JSON.stringify(blob)], 'petition-backup-' + dkey(today()) + '.enc', { type: 'application/octet-stream' });
-      if (navigator.canShare({ files: [f] })) { bkFile = f; ['#btn-bkshare', '#bk-share'].forEach(function (q) { var b = $(q); if (b) b.disabled = false; }); }
+      var f = new File([JSON.stringify(blob)], 'petition-backup-' + dkey(today()) + '.enc', { type: 'text/plain' });
+      if (navigator.canShare({ files: [f] })) bkFile = f;
     } catch (e) { }
   }
-  function shareBackup() { if (!bkFile) return; navigator.share({ files: [bkFile] }).then(function () { markBackup(); if (view === 'more') renderMore(); }).catch(function () { }); }
+  async function shareBackup() {
+    if (bkFile) {
+      try { await navigator.share({ files: [bkFile] }); markBackup(); if (view === 'more') renderMore(); return; }
+      catch (e) { if (e && e.name === 'AbortError') return; }
+    }
+    try { await exportEnc(); toast('کۆپییا پاراستنێ هاتە دابەزاندن. ل «Files» ← Downloads بدەزە'); if (view === 'more') renderMore(); }
+    catch (e) { toast('نەشیا کۆپییێ دروست بکەت'); }
+  }
   var shareFile = null;
   async function prepShare(rec) {
     shareFile = null;
@@ -1324,7 +1331,7 @@ input[type=range]{width:100%}
       h('div', { class: 'hint' }, T(rec.name + ' · ' + typeOf(rec.type).name + ' · '), ltr(fmtD(rec.leave)), T(' · ' + (hourly ? ar(rec.hours) + ' سەعەت' : ar(rec.days) + ' روژ'))),
       h('div', { class: 'row', style: 'margin-top:8px' },
         WEB && navigator.share ? h('button', { class: 'btn small', id: 'btn-share', type: 'button', disabled: true, text: 'بەلاڤکرن', onclick: function () { if (shareFile) navigator.share({ files: [shareFile] }).catch(function () { }); } }) : null,
-        WEB && navigator.share ? h('button', { class: 'btn small', id: 'btn-bkshare', type: 'button', disabled: true, text: 'پاراستن ل Files', onclick: shareBackup }) : null,
+        WEB ? h('button', { class: 'btn small', id: 'btn-bkshare', type: 'button', text: 'پاراستن ل Files', onclick: shareBackup }) : null,
         btn('PDF دووبارە', '', async function () {
           try { var r = await deliver(rec); if (r === 'saved') toast('فایل هاتە پاشەکەفتکرن'); } catch (e) { toast('نەشیا فایل دروست بکەت'); }
         }, 'btn-again'),
@@ -1875,7 +1882,7 @@ input[type=range]{width:100%}
   }
   function renderBackup(V) {
     if (WEB) {
-      var ef = h('input', { type: 'file', id: 'imp-enc', class: 'in', accept: '.enc,application/octet-stream' }), ep = h('input', { class: 'in', id: 'imp-enc-pw', type: 'password', placeholder: 'پاسۆۆردا ڤی فایلی', autocomplete: 'off' });
+      var ef = h('input', { type: 'file', id: 'imp-enc', class: 'in' }), ep = h('input', { class: 'in', id: 'imp-enc-pw', type: 'password', placeholder: 'پاسۆۆردا ڤی فایلی', autocomplete: 'off' });
       var op = h('input', { class: 'in', id: 'pw-old', type: 'password', placeholder: 'پاسۆۆردا نوکە', autocomplete: 'current-password' }), np = h('input', { class: 'in', id: 'pw-new', type: 'password', placeholder: 'پاسۆۆردا نوی (٨ پیت و زێدەتر)', autocomplete: 'new-password' });
       prepBackup(); V.append(syncCard());
       V.append(h('div', { class: 'card' }, h('h2', { text: 'کۆپییا پاراستنێ ب پاسۆۆرد' }),
@@ -1883,7 +1890,7 @@ input[type=range]{width:100%}
         h('p', { class: 'hint', id: 'bk-state', text: unbacked() ? ar(unbacked()) + ' عەریزە ژ کۆپییا دوماهیێ نوینە.' : 'هەمی عەریز د کۆپییا دوماهیێ دا نە.' }),
         h('div', { class: 'row', style: 'margin:10px 0' },
           h('button', { class: 'btn primary', id: 'bk-enc', type: 'button', text: 'کۆپییا پاراستنێ دروست بکە', onclick: async function () { await exportEnc(); renderMore(); } }),
-          navigator.share ? h('button', { class: 'btn', id: 'bk-share', type: 'button', disabled: true, text: 'پاراستن ل Files', onclick: shareBackup }) : null,
+          h('button', { class: 'btn', id: 'bk-share', type: 'button', text: 'پاراستن ل Files', onclick: shareBackup }),
           h('button', { class: 'btn', id: 'bk-csv', type: 'button', text: 'هەمی عەریزان ب CSV', onclick: function () { saveFile('petitions-all-' + dkey(today()) + '.csv', csvOf(detailRows(records.slice().sort(byLeave)))); } })),
         fld('ڤەگەڕاندن ژ فایلەکێ (.enc)', 'imp-enc', ef), ep,
         h('button', { class: 'btn small', id: 'imp-enc-go', type: 'button', style: 'margin-top:8px', text: 'ڤەگەڕاندن', onclick: async function () {
