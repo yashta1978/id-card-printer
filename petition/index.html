@@ -250,7 +250,7 @@ input[type=range]{width:100%}
   function usedDays(name, year, exceptId) {
     var n = 0; name = trimName(name);
     records.forEach(function (r) {
-      if ((r.type || 'annual') !== 'annual' || r.status === 'rejected' || r.id === exceptId) return;
+      if ((r.type || 'annual') !== 'annual' || r.id === exceptId) return;
       if (trimName(r.name) !== name || !r.leave || r.leave.y !== year) return;
       n += (+r.days || 0);
     });
@@ -260,7 +260,7 @@ input[type=range]{width:100%}
     var out = [], me = rangeOf(st); name = trimName(name);
     if (!name || st.type === 'hourly') return out;
     records.forEach(function (r) {
-      if (r.id === exceptId || r.status === 'rejected' || (r.type || 'annual') === 'hourly' || trimName(r.name) !== name || !r.leave) return;
+      if (r.id === exceptId || (r.type || 'annual') === 'hourly' || trimName(r.name) !== name || !r.leave) return;
       var o = rangeOf(r);
       if (cmpD(o.a, me.b) <= 0 && cmpD(me.a, o.b) <= 0) out.push({ a: o.a, b: o.b });
     });
@@ -285,7 +285,7 @@ input[type=range]{width:100%}
   function normRec(r) {
     r = Object.assign({}, r);
     if (!TYPES[r.type]) r.type = 'annual';
-    if (STATUS_KEYS.indexOf(r.status) < 0) r.status = 'draft';
+    delete r.status;
     r.days = +r.days || 0; r.hours = +r.hours || 1;
     if (r.type !== 'hourly' && r.days < 1) r.days = 1;
     r.extras = normX(r.extras); r.sigPos = normPos(r.sigPos); r.stampPos = normPos(r.stampPos);
@@ -326,6 +326,7 @@ input[type=range]{width:100%}
     });
   }
   function del(col, id) {
+    if (col === 'petitions' && typeof addTomb === 'function') addTomb(id);
     return q(async function () {
       mirror();
       if (store.mode !== 'cloud') { if (cloudPending) { pend[col + '/' + id] = 'del'; mirror(); } return true; }
@@ -355,7 +356,7 @@ input[type=range]{width:100%}
     return out;
   }
   function fromSnap(snap) { return snap.docs.map(function (d) { var o = Object.assign({}, d.data()); o.id = d.id; return o; }); }
-  function saveSettings() { return put('meta', 'settings', settings); }
+  function saveSettings() { if (typeof syncMeta !== 'undefined') syncMeta.sT = new Date().toISOString(); return put('meta', 'settings', settings); }
   function saveStamp() { return put('meta', 'stamp', { img: stamp || '' }); }
   function saveSig() { return put('meta', 'sig', { img: sigImg || '' }); }
   function saveRec(r) { return put('petitions', r.id, stripId(r)); }
@@ -742,8 +743,8 @@ input[type=range]{width:100%}
     var pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64d(blob.iv) }, key, b64d(blob.ct));
     return { text: new TextDecoder().decode(pt), key: key, salt: salt };
   }
-  function dataText(extra) { var o = { records: records, employees: employees, settings: settings, stamp: stamp, sig: sigImg }; if (extra) for (var k in extra) o[k] = extra[k]; return JSON.stringify(o); }
-  function webPersist() { if (!encKey) return; clearTimeout(encTimer); encTimer = setTimeout(webFlush, 200); }
+  function dataText(extra) { var o = { records: records, employees: employees, settings: settings, stamp: stamp, sig: sigImg, gh: gh, tombs: tombs, syncMeta: syncMeta }; if (extra) for (var k in extra) o[k] = extra[k]; return JSON.stringify(o); }
+  function webPersist() { if (!encKey) return; if (!quiet) syncSoon(); clearTimeout(encTimer); encTimer = setTimeout(webFlush, 200); }
   function webFlush() {
     clearTimeout(encTimer); encTimer = null;
     if (!encKey) return Promise.resolve();
@@ -756,6 +757,7 @@ input[type=range]{width:100%}
   }
   function loadFromRaw(raw) {
     records = (raw.records || []).map(normRec); employees = raw.employees || []; settings = normSettings(raw.settings); stamp = raw.stamp || null; sigImg = raw.sig || null; pend = {};
+    gh = raw.gh || null; tombs = raw.tombs || []; syncMeta = Object.assign({ sT: '', last: '', err: '', ks: '' }, raw.syncMeta || {});
     sortRecords(); sortEmps();
   }
   var webDl = { save: async function (o) {
@@ -785,7 +787,7 @@ input[type=range]{width:100%}
     var pw = h('input', { class: 'in', id: 'lk-pw', type: 'password', autocomplete: has ? 'current-password' : 'new-password', placeholder: 'پاسۆۆرد' });
     var pw2 = h('input', { class: 'in', id: 'lk-pw2', type: 'password', autocomplete: 'new-password', placeholder: 'پاسۆۆرد دووبارە بنڤیسە' });
     var rf = h('input', { type: 'file', id: 'lk-file', class: 'in', accept: '.enc,application/octet-stream' });
-    function open_(r) { encKey = r.key; encSalt = r.salt; $('#btn-more').hidden = false; webFlush().then(function () { done(); }); }
+    function open_(r) { encKey = r.key; encSalt = r.salt; pwMem = pw.value; $('#btn-more').hidden = false; webFlush().then(function () { done(); }); }
     async function go() {
       if (busy2) return; var p = pw.value;
       if (!has && (p.length < 8 || p !== pw2.value)) { toast(p.length < 8 ? 'پاسۆۆرد دڤێت ٨ پیتان کێمتر نەبیت' : 'هەردوو پاسۆۆرد وەک ئێک نینن'); return; }
@@ -816,7 +818,7 @@ input[type=range]{width:100%}
   async function changePassword(oldp, newp) {
     var raw = JSON.parse(localStorage.getItem(ENC_KEY) || 'null');
     try { await decWith(raw, oldp); } catch (e) { toast('پاسۆۆردا کەڤن یا خەلەتە'); return false; }
-    var salt = crypto.getRandomValues(new Uint8Array(16)); encKey = await deriveKey(newp, salt); encSalt = salt; await webFlush(); toast('پاسۆۆرد هاتە گوهۆڕین. کۆپییێن کەڤن هێشتا ب پاسۆۆردا کەڤن دهێنە کرن'); return true;
+    var salt = crypto.getRandomValues(new Uint8Array(16)); encKey = await deriveKey(newp, salt); encSalt = salt; oldPw = oldp; pwMem = newp; await webFlush(); syncSoon(500); toast('پاسۆۆرد هاتە گوهۆڕین. کۆپییێن کەڤن هێشتا ب پاسۆۆردا کەڤن دهێنە کرن'); return true;
   }
   var shareFile = null;
   async function prepShare(rec) {
@@ -826,6 +828,184 @@ input[type=range]{width:100%}
       var res = await renderSheet(rec), buf = pdfOf([res], fileSafe(rec.name) + ' ' + dkey(rec.leave), payloadOf(rec)), f = new File([buf], recFileName(rec), { type: 'application/pdf' });
       if (navigator.canShare({ files: [f] })) { shareFile = f; var b = $('#btn-share'); if (b) b.disabled = false; }
     } catch (e) { }
+  }
+
+
+  /* ---------- GitHub sync (web build only) ----------
+     Names, titles, departments, places, signature and stamp never leave this device.
+     Everything else (dates, days, types, serials, settings) goes, encrypted with the same password, to one file on a data branch. */
+  var gh = null, tombs = [], syncMeta = { sT: '', last: '', err: '', ks: '' }, pwMem = '', oldPw = '', quiet = false, syncP = null, syncAgain = false, syncTimer = null, DATA_FILE = 'data.enc';
+  function ghOn() { return !!(WEB && gh && gh.token && gh.repo); }
+  function addTomb(id) { tombs.push({ id: id, t: new Date().toISOString() }); if (tombs.length > 500) tombs = tombs.slice(-500); }
+  function quietPersist() { quiet = true; try { webPersist(); } finally { quiet = false; } }
+  function syncSoon(ms) {
+    if (!ghOn() || !encKey) return;
+    if (syncP) { syncAgain = true; return; }
+    clearTimeout(syncTimer); syncTimer = setTimeout(function () { syncNow(); }, ms == null ? 3000 : ms);
+  }
+  /* every record must point at an employee, so identity can be rebuilt from the local employee list */
+  function ensureIdentities() {
+    var ids = {}; employees.forEach(function (e) { ids[e.id] = 1; });
+    records.forEach(function (r) {
+      if (r.empId && ids[r.empId]) return;
+      var e = findEmpByName(r.name);
+      if (!e) {
+        e = { id: uid('e_'), name: trimName(r.name) || '—', title: r.title || '', dept: r.dept || '', place: r.place || '', entitlement: null, sig: null, createdAt: new Date().toISOString() };
+        employees.push(e); ids[e.id] = 1;
+      }
+      r.empId = e.id;
+    });
+  }
+  function ghPayload() {
+    ensureIdentities();
+    var emps = employees.map(function (e) { return { id: e.id, entitlement: typeof e.entitlement === 'number' ? e.entitlement : null, createdAt: e.createdAt || '' }; });
+    emps.sort(function (a, b) { return a.id < b.id ? -1 : 1; });
+    var recs = records.map(function (r) { var c = {}, k; for (k in r) if (k !== 'name' && k !== 'title' && k !== 'dept' && k !== 'place') c[k] = r[k]; return c; });
+    recs.sort(function (a, b) { return a.id < b.id ? -1 : 1; });
+    var tb = tombs.slice().sort(function (a, b) { return a.id < b.id ? -1 : 1; });
+    return { v: 1, sT: syncMeta.sT || '', settings: settings, emps: emps, records: recs, tombs: tb };
+  }
+  function mergeRemote(rem) {
+    quiet = true;
+    try {
+      var tmap = {}, i;
+      tombs.concat(rem.tombs || []).forEach(function (t) { if (!tmap[t.id] || t.t > tmap[t.id]) tmap[t.id] = t.t; });
+      tombs = Object.keys(tmap).map(function (id) { return { id: id, t: tmap[id] }; });
+      (rem.emps || []).forEach(function (re) {
+        var le = findEmp(re.id);
+        if (!le) employees.push({ id: re.id, name: 'کارمەند ' + String(re.id).slice(-5), title: '', dept: '', place: '', entitlement: typeof re.entitlement === 'number' ? re.entitlement : null, sig: null, createdAt: re.createdAt || '' });
+        else if (le.entitlement == null && typeof re.entitlement === 'number') le.entitlement = re.entitlement;
+      });
+      var idx = {}; records.forEach(function (r, k) { idx[r.id] = k; });
+      (rem.records || []).forEach(function (rr) {
+        if (tmap[rr.id] && tmap[rr.id] >= String(rr.updatedAt || '')) return;
+        var emp = findEmp(rr.empId), k = idx[rr.id];
+        if (k == null) {
+          records.push(normRec(Object.assign({}, rr, { name: emp ? emp.name : '؟', title: emp ? emp.title : '', dept: emp ? emp.dept : '', place: emp ? emp.place : '' })));
+        } else if (String(rr.updatedAt) > String(records[k].updatedAt)) {
+          var lr = records[k];
+          records[k] = normRec(Object.assign({}, lr, rr, { name: lr.name, title: lr.title, dept: lr.dept, place: lr.place }));
+        }
+      });
+      records = records.filter(function (r) { return !(tmap[r.id] && tmap[r.id] >= String(r.updatedAt || '')); });
+      if (rem.settings) {
+        var rs = normSettings(rem.settings), remoteNewer = String(rem.sT || '') > String(syncMeta.sT || ''), loc = settings;
+        settings = remoteNewer ? rs : loc;
+        var yrs = {}; Object.keys(rs.serials || {}).concat(Object.keys(loc.serials || {})).forEach(function (y) { yrs[y] = 1; });
+        Object.keys(yrs).forEach(function (y) { settings.serials[y] = Math.max((rs.serials || {})[y] || 0, (loc.serials || {})[y] || 0); });
+        if (remoteNewer) syncMeta.sT = rem.sT;
+      }
+      sortRecords(); sortEmps();
+    } finally { quiet = false; }
+  }
+  /* --- GitHub REST --- */
+  function GhErr(kind, status) { var e = new Error(kind); e.kind = kind; e.status = status; return e; }
+  async function ghFetch(method, path, body, accept) {
+    var ctl = typeof AbortController !== 'undefined' ? new AbortController() : null, tm = ctl ? setTimeout(function () { ctl.abort(); }, 20000) : null, res;
+    try {
+      res = await fetch('https://api.github.com' + path, { method: method, cache: 'no-store', signal: ctl ? ctl.signal : undefined,
+        headers: Object.assign({ Authorization: 'Bearer ' + gh.token, Accept: accept || 'application/vnd.github+json' }, body ? { 'Content-Type': 'application/json' } : {}),
+        body: body ? JSON.stringify(body) : undefined });
+    } catch (e) { throw GhErr('net', 0); } finally { if (tm) clearTimeout(tm); }
+    return res;
+  }
+  function chk(res) {
+    if (res.status === 401) throw GhErr('auth', 401);
+    if (res.status === 403 || res.status === 404) throw GhErr('perm', res.status);
+    if (res.status >= 500) throw GhErr('net', res.status);
+  }
+  async function ghEnsureBranch() {
+    var P = '/repos/' + gh.repo, r = await ghFetch('GET', P + '/git/ref/heads/' + encodeURIComponent(gh.branch));
+    if (r.status === 200) return;
+    if (r.status !== 404) { chk(r); throw GhErr('http', r.status); }
+    var rp = await ghFetch('GET', P); chk(rp); var def = (await rp.json()).default_branch || 'main';
+    var rb = await ghFetch('GET', P + '/git/ref/heads/' + encodeURIComponent(def)); chk(rb);
+    var sha = (await rb.json()).object.sha;
+    var rc = await ghFetch('POST', P + '/git/refs', { ref: 'refs/heads/' + gh.branch, sha: sha });
+    if (rc.status !== 201 && rc.status !== 422) { chk(rc); throw GhErr('http', rc.status); }
+  }
+  async function ghGet() {
+    var P = '/repos/' + gh.repo + '/contents/' + DATA_FILE + '?ref=' + encodeURIComponent(gh.branch);
+    var r = await ghFetch('GET', P);
+    if (r.status === 404) { await ghEnsureBranch(); return null; }
+    chk(r); if (r.status !== 200) throw GhErr('http', r.status);
+    var j = await r.json(), txt;
+    if (j.content) txt = atob(String(j.content).replace(/\s/g, ''));
+    else { var rr = await ghFetch('GET', P, null, 'application/vnd.github.raw+json'); chk(rr); txt = await rr.text(); }
+    var blob; try { blob = JSON.parse(txt); } catch (e) { throw GhErr('fmt', 0); }
+    return { sha: j.sha, blob: blob };
+  }
+  async function ghPut(blob, sha) {
+    var body = { message: 'sync', content: btoa(JSON.stringify(blob)), branch: gh.branch }; if (sha) body.sha = sha;
+    var r = await ghFetch('PUT', '/repos/' + gh.repo + '/contents/' + DATA_FILE, body);
+    if (r.status === 409 || r.status === 422) throw GhErr('conflict', r.status);
+    chk(r); if (r.status !== 200 && r.status !== 201) throw GhErr('http', r.status);
+  }
+  async function syncOnce(retry) {
+    var rem = await ghGet(), remote = null, plain = null;
+    if (rem && rem.blob) {
+      var pws = [pwMem].concat(oldPw ? [oldPw] : []), ok = false, i;
+      for (i = 0; i < pws.length && !ok; i++) { try { plain = (await decWith(rem.blob, pws[i])).text; ok = true; } catch (e) { } }
+      if (!ok) throw GhErr('pw', 0);
+      remote = JSON.parse(plain); mergeRemote(remote);
+    }
+    var text = JSON.stringify(ghPayload()), ks = b64e(encSalt);
+    if (!remote || plain !== text || syncMeta.ks !== ks) {
+      var blob = await encWith(encKey, encSalt, text);
+      try { await ghPut(blob, rem && rem.sha); }
+      catch (e) { if (e.kind === 'conflict' && !retry) return syncOnce(true); throw e; }
+      syncMeta.ks = ks; oldPw = '';
+    }
+  }
+  function syncErrText(e) {
+    var k = e && e.kind;
+    return k === 'auth' ? 'تۆکن یێ خەلەتە یان بدوماهی هاتیە'
+      : k === 'perm' ? 'ئەڤ تۆکنە دەستوورا نڤیسینێ ل سەر ڤی مستودەعی نینە یان مستودەع نەهاتە دیتن'
+      : k === 'pw' ? 'پاسۆۆردا کۆپییا GitHub جیاوازە ژ ڤی پاسۆۆردی'
+      : k === 'net' ? 'ئینتەرنێت نینە. دێ پاشی دووبارە هەول دەت'
+      : 'هاوکاتکرن سەرنەکەفت';
+  }
+  function syncNow() {
+    if (!ghOn() || !encKey) return Promise.resolve(false);
+    if (syncP) { syncAgain = true; return syncP; }
+    clearTimeout(syncTimer);
+    syncP = (async function () {
+      var ok = false;
+      try { await syncOnce(false); ok = true; syncMeta.err = ''; syncMeta.last = new Date().toISOString(); }
+      catch (e) { syncMeta.err = syncErrText(e); if (e && e.kind && e.kind !== 'net') { } }
+      syncP = null; quietPersist(); paintSync();
+      try { onData(); } catch (e) { }
+      if (syncAgain) { syncAgain = false; if (ok) syncSoon(1200); }
+      return ok;
+    })();
+    return syncP;
+  }
+  function lastText() {
+    if (!gh || !gh.token) return 'هاوکاتکرن ڤەکوشتیە.';
+    if (syncMeta.err) return syncMeta.err;
+    if (!syncMeta.last) return 'هێشتا هاوکاتکرن نەهاتیە کرن.';
+    var d = new Date(syncMeta.last);
+    return 'دوماهیک هاوکاتکرن: ' + ar(pad2(d.getDate()) + '/' + pad2(d.getMonth() + 1) + '/' + d.getFullYear() + ' ' + pad2(d.getHours()) + ':' + pad2(d.getMinutes()));
+  }
+  function paintSync() { var el = $('#gh-state'); if (el) { el.textContent = lastText(); el.className = syncMeta.err && gh ? 'alert' : 'hint'; } }
+  function syncCard() {
+    var repo = h('input', { class: 'in', id: 'gh-repo', value: (gh && gh.repo) || 'yashta1978/id-card-printer', autocomplete: 'off', dir: 'ltr' });
+    var br = h('input', { class: 'in', id: 'gh-br', value: (gh && gh.branch) || 'petition-data', autocomplete: 'off', dir: 'ltr' });
+    var tk = h('input', { class: 'in', id: 'gh-tk', type: 'password', placeholder: gh && gh.token ? '•••••••• (هاتیە پاراستن)' : 'تۆکن (token)', autocomplete: 'off', dir: 'ltr' });
+    var st = h('p', { class: 'hint', id: 'gh-state', text: lastText() });
+    return h('div', { class: 'card' }, h('h2', { text: 'هاوکاتکرن لەگەل GitHub' }),
+      h('p', { class: 'hint', text: 'ناڤ، ناڤنیشان، هوبە، جهێ کاری، واژۆ و مۆر تنێ ل سەر ڤی ئایفونێ دمینن و ناهێنە ناردن. هەمی ئەوێن دی ب پاسۆۆردی هاتینە قفلکرن و دچنە فەرعا petition-data ل GitHub.' }),
+      fld('مستودەع (owner/repo)', 'gh-repo', repo), fld('فەرع', 'gh-br', br), fld('تۆکن', 'gh-tk', tk), st,
+      h('div', { class: 'row', style: 'margin-top:8px' },
+        h('button', { class: 'btn primary', id: 'gh-save', type: 'button', text: 'پاراستن و هاوکاتکرن', onclick: async function () {
+          var r = repo.value.trim().replace(/^https?:\/\/github\.com\//, '').replace(/\.git$/, '').replace(/\/$/, ''), b = br.value.trim() || 'petition-data', t = tk.value.trim() || (gh && gh.token) || '';
+          if (!/^[\w.-]+\/[\w.-]+$/.test(r) || !t) { toast('مستودەع و تۆکن بنڤیسە'); return; }
+          if (!/^[\w./-]+$/.test(b)) { toast('ناڤێ فەرعێ یێ خەلەتە'); return; }
+          gh = { repo: r, branch: b, token: t }; tk.value = ''; syncMeta.err = ''; await webFlush();
+          var ok = await syncNow(); toast(ok ? 'هاوکاتکرن سەرکەفتی بوو' : (syncMeta.err || 'سەرنەکەفت')); paintSync();
+        } }),
+        h('button', { class: 'btn', id: 'gh-now', type: 'button', text: 'هاوکاتکرنا نوکە', onclick: async function () { if (!ghOn()) { toast('ئێکەم تۆکنی بپارێزە'); return; } var ok = await syncNow(); toast(ok ? 'هاوکاتکرن سەرکەفتی بوو' : (syncMeta.err || 'سەرنەکەفت')); } }),
+        h('button', { class: 'btn danger', id: 'gh-off', type: 'button', text: 'بڕین', onclick: function () { gh = null; syncMeta.err = ''; webPersist(); renderMore(); toast('هاوکاتکرن هاتە ڤەکوشتن'); } })));
   }
 
 
@@ -896,13 +1076,12 @@ input[type=range]{width:100%}
     if (!r) {
       if (scanLoading) card.append(h('p', { class: 'hint', text: 'دهێتە ڤەکرن…' }));
       else card.append(alertBox('ئەڤ عەریزە د ئەرشیڤا تە دا نەهاتە دیتن.', true), h('p', { class: 'hint', text: 'ئەگەر تە بەرێ نوکە ژ هەژمارەکا دی چێکریبیت، ئەڤ لینکە ل ڤێرە ناکار دکەت.' }),
-        h('div', { class: 'row' }, btn('دووبارە هەول بدە', '', function () { buildMain(); }, 'sc-retry')));
+        h('div', { class: 'row' }, btn('دووبارە هەول بدە', '', function () { (ghOn() ? syncNow() : Promise.resolve()).then(function () { buildMain(); }); }, 'sc-retry')));
       card.append(h('div', { class: 'row', style: 'margin-top:8px' }, btn('دەستپێک', 'primary', home, 'sc-home')));
       V.append(card); return;
     }
     var rg = rangeOf(r), t = today(), hourly = r.type === 'hourly', needNew = false, verdict, cls;
-    if (r.status === 'rejected') { verdict = 'ئەڤ عەریزە یا ڕەتکریە'; cls = 'bad'; needNew = true; }
-    else if (cmpD(t, rg.a) < 0) { verdict = 'مۆلەت هێشتا دەست پێ نەکریە'; cls = ''; }
+    if (cmpD(t, rg.a) < 0) { verdict = 'مۆلەت هێشتا دەست پێ نەکریە'; cls = ''; }
     else if (cmpD(t, rg.b) <= 0) { verdict = 'مۆلەت یا چالاکە'; cls = 'ok'; }
     else { verdict = 'مۆلەت ب دوماهی هات. پێدڤی ب عەریزەیەکا نوی یە'; cls = 'bad'; needNew = true; }
     if (qrCode(r) !== scan.code) card.append(alertBox('ڕەمزا پشتڕاستکرنێ ناگونجیت. ڕەنگە ئەڤ کاغەزە هاتبیتە گوهۆڕین.', true));
@@ -914,11 +1093,7 @@ input[type=range]{width:100%}
       !hourly ? h('div', { class: 'hint' }, T('ڤەگەڕ بو کاری: '), ltr(fmtD(retAfter(rg.b)))) : null,
       h('div', { class: 'hint' }, T('هاتیە نڤیسین: '), ltr(fmtD(r.write))),
       h('div', { class: 'hint' }, T('ڕەسید: ' + ar(ent) + ' · بکارهاتی ' + ar(r.leave.y) + ': ' + ar(used) + ' · مای: '), h('b', { class: ent - used < 0 ? 'neg' : '', text: ar(ent - used) }))));
-    var st = h('select', { class: 'in', id: 'sc-status', 'aria-label': 'دۆخ' }, STATUS_KEYS.map(function (k) { return h('option', { value: k, text: STATUS[k] }); })); st.value = r.status;
-    st.addEventListener('change', function () { r.status = st.value; r.updatedAt = new Date().toISOString(); saveRec(r); buildMain(); toast('دۆخ هاتە گوهۆڕین'); });
-    card.append(fld('دۆخ', 'sc-status', st));
     var row = h('div', { class: 'row' });
-    if (r.status !== 'approved' && r.status !== 'rejected') row.append(btn('پەسەندکرن', '', function () { r.status = 'approved'; r.updatedAt = new Date().toISOString(); saveRec(r); buildMain(); toast('عەریزە هاتە پەسەندکرن'); }, 'sc-approve'));
     row.append(btn('PDF', '', async function () { try { var o = await deliver(r); if (o === 'saved') toast('فایل هاتە پاشەکەفتکرن'); } catch (er) { toast('نەشیا فایل دروست بکەت'); } }, 'sc-pdf'));
     card.append(row);
     card.append(h('button', { class: 'btn big primary', id: 'sc-copy', type: 'button', style: 'margin-top:10px', text: 'کۆپیکرنا ڤێ عەریزێ بو عەریزەیەکا نوی', onclick: function () { startCopyFor(r); } }));
@@ -1159,12 +1334,13 @@ input[type=range]{width:100%}
     busy = true; ctl.go.disabled = true; var label = ctl.go.textContent; ctl.go.textContent = 'PDF دهێتە دروستکرن…';
     var rec = null;
     try {
+      if (ghOn()) { try { await Promise.race([syncNow(), new Promise(function (res) { setTimeout(res, 6000); })]); } catch (e0) { } }
       var e = ensureEmployee(st, false);
       var now = new Date().toISOString(), hourly = st.type === 'hourly';
       var ser = nextSerial(st.write.y), w = st.write;
       rec = normRec({ id: uid('p_'), createdAt: now, updatedAt: now, type: st.type, days: hourly ? 0 : st.days, hours: st.hours,
         leave: { y: st.leave.y, m: st.leave.m, d: st.leave.d }, write: { y: w.y, m: w.m, d: w.d }, weekday: st.weekday,
-        place: st.place, title: st.title, name: st.name, dept: st.dept, empId: e.id, status: 'draft', serial: ser,
+        place: st.place, title: st.title, name: st.name, dept: st.dept, empId: e.id, serial: ser,
         useSig: settings.useSig, useStamp: settings.useStamp, sigPos: null, stampPos: null, sigScale: 1, stampScale: 1,
         extras: (settings.extras || []).map(function (x) { return { id: uid('x_'), d: { y: w.y, m: w.m, d: w.d }, x: x.x, y: x.y, auto: false }; }) });
       upsert(records, rec); sortRecords();
@@ -1278,13 +1454,12 @@ input[type=range]{width:100%}
     return Object.keys(ys).map(Number).sort(function (a, b) { return b - a; });
   }
   function statement(name, yr, mo) {
-    var n = trimName(name), per = { n: 0, annual: 0, sick: 0, hours: 0, rej: 0 }, list = [], months = [], i;
+    var n = trimName(name), per = { n: 0, annual: 0, sick: 0, hours: 0 }, list = [], months = [], i;
     for (i = 0; i < 12; i++) months.push({ n: 0, annual: 0, sick: 0, hours: 0 });
     records.forEach(function (r) {
       if (trimName(r.name) !== n || !r.leave || r.leave.y !== yr) return;
       var inMo = !mo || r.leave.m === mo;
       if (inMo) list.push(r);
-      if (r.status === 'rejected') { if (inMo) per.rej++; return; }
       var k = r.type === 'hourly' ? 'hours' : r.type === 'sick' ? 'sick' : 'annual', v = k === 'hours' ? (+r.hours || 0) : (+r.days || 0), mm = months[r.leave.m - 1];
       mm.n++; mm[k] += v;
       if (inMo) { per.n++; per[k] += v; }
@@ -1296,13 +1471,11 @@ input[type=range]{width:100%}
   function repTitle(R) { return 'ساڵا ' + ar(R.y) + (R.m ? ' · مەهێ ' + MONTHS[R.m - 1] : ' · هەمی ساڵ'); }
   function stmtRow(r) {
     var hr = r.type === 'hourly', e = hr ? r.leave : endOf(r.leave, Math.max(1, r.days));
-    return { serial: r.serial ? serialText(r.serial) : '—', type: typeOf(r.type).name, from: fmtD(r.leave), to: hr ? '—' : fmtD(e), amount: hr ? ar(r.hours) + ' سەعەت' : ar(r.days) + ' روژ', status: STATUS[r.status] };
+    return { serial: r.serial ? serialText(r.serial) : '—', type: typeOf(r.type).name, from: fmtD(r.leave), to: hr ? '—' : fmtD(e), amount: hr ? ar(r.hours) + ' سەعەت' : ar(r.days) + ' روژ' };
   }
   var armDel = null;
   function petitionCard(r, showName) {
-    var x = stmtRow(r), st = h('select', { class: 'in', style: 'min-height:36px;width:auto', 'aria-label': 'دۆخ' }, STATUS_KEYS.map(function (k) { return h('option', { value: k, text: STATUS[k] }); }));
-    st.value = r.status;
-    st.addEventListener('change', function () { r.status = st.value; r.updatedAt = new Date().toISOString(); saveRec(r); refreshMore(); toast('دۆخ هاتە گوهۆڕین'); });
+    var x = stmtRow(r);
     var del = btn('ژێبرن', 'danger', function () {
       if (armDel !== r.id) { armDel = r.id; del.textContent = 'دووبارە کلیک بکە بو دلنیابوونێ'; setTimeout(function () { if (armDel === r.id) { armDel = null; del.textContent = 'ژێبرن'; } }, 4000); return; }
       armDel = null; records = records.filter(function (y) { return y.id !== r.id; });
@@ -1312,7 +1485,7 @@ input[type=range]{width:100%}
       h('div', { class: 'row', style: 'justify-content:space-between' }, h('b', {}, ltr(x.serial)), h('span', { text: x.type })),
       h('div', {}, ltr(x.to === '—' ? x.from : x.from + ' → ' + x.to), h('span', { class: 'hint', text: '  ' + x.amount })),
       showName ? h('div', { class: 'hint', text: r.name }) : null,
-      h('div', { class: 'row', style: 'margin-top:6px' }, st,
+      h('div', { class: 'row', style: 'margin-top:6px' },
         btn('کۆپیکرن', '', function () { startCopyFor(r); }),
         btn('PDF', '', async function () { try { var o = await deliver(r); if (o === 'saved') toast('فایل هاتە پاشەکەفتکرن'); } catch (e) { toast('نەشیا فایل دروست بکەت'); } }), del));
   }
@@ -1331,7 +1504,6 @@ input[type=range]{width:100%}
       h('div', { class: 'grid2' }, fld('ساڵ', 's-year', ysel), fld('مەه', 's-month', msel)),
       h('div', { class: 'stats' }, stat('ژمارا عەریزان', ar(p.n)), stat('ڕۆژێن ئاسایی', ar(p.annual)), stat('ڕۆژێن نەخوەشیێ', ar(p.sick)), stat('سەعەت', ar(p.hours)),
         stat('ڕەسیدێ ساڵانە', ar(S.ent)), stat('بکارهاتی', ar(S.used)), stat('ڕەسیدێ مایی', ar(S.left), S.left < 0)),
-      p.rej ? h('p', { class: 'hint', text: ar(p.rej) + ' عەریزێن ڕەتکری د ژمارتنێ دا نینن.' }) : null,
       h('div', { class: 'row' }, h('button', { class: 'btn small primary', id: 's-pdf', type: 'button', text: 'کەشف ب PDF', onclick: statementPdf }), btn('CSV', '', statementCsv, 's-csv'))));
     if (!arch.m) {
       var cum = 0, mb = h('tbody');
@@ -1350,10 +1522,10 @@ input[type=range]{width:100%}
   function csvCell(v) { v = String(v == null ? '' : v); return /[",\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }
   function csvOf(rows) { return '﻿' + rows.map(function (r) { return r.map(csvCell).join(','); }).join('\r\n'); }
   function detailRows(list) {
-    var out = [['ژمارە', 'ناڤ', 'ناڤنیشان', 'هوبە', 'جۆر', 'دۆخ', 'ژ ڕێکەفتی', 'هەتا ڕێکەفتی', 'ڤەگەڕان بو کاری', 'ڕۆژ', 'سەعەت', 'ڕێکەفتا نڤیسینێ', 'جهێ کاری']];
+    var out = [['ژمارە', 'ناڤ', 'ناڤنیشان', 'هوبە', 'جۆر', 'ژ ڕێکەفتی', 'هەتا ڕێکەفتی', 'ڤەگەڕان بو کاری', 'ڕۆژ', 'سەعەت', 'ڕێکەفتا نڤیسینێ', 'جهێ کاری']];
     list.forEach(function (r) {
       var hourly = r.type === 'hourly', e = hourly ? r.leave : endOf(r.leave, Math.max(1, r.days));
-      out.push([r.serial ? r.serial.y + '/' + pad4(r.serial.n) : '', r.name, r.title, r.dept, typeOf(r.type).name, STATUS[r.status], dkey(r.leave), dkey(e), hourly ? '' : dkey(retAfter(e)), hourly ? 0 : r.days, hourly ? r.hours : 0, dkey(r.write), r.place]);
+      out.push([r.serial ? r.serial.y + '/' + pad4(r.serial.n) : '', r.name, r.title, r.dept, typeOf(r.type).name, dkey(r.leave), dkey(e), hourly ? '' : dkey(retAfter(e)), hourly ? 0 : r.days, hourly ? r.hours : 0, dkey(r.write), r.place]);
     });
     return out;
   }
@@ -1383,13 +1555,13 @@ input[type=range]{width:100%}
   async function statementPdf() {
     var S = statement(arch.emp, arch.y, arch.m);
     if (!S.list.length) { toast('بو ڤی ماوەی چ عەریزە نینن'); return; }
-    var data = S.list.map(function (r, i) { var x = stmtRow(r); return [ar(i + 1), x.serial, x.type, x.from, x.to, x.amount, x.status]; });
+    var data = S.list.map(function (r, i) { var x = stmtRow(r); return [ar(i + 1), x.serial, x.type, x.from, x.to, x.amount]; });
     var p = S.per, per = 21, R0 = { y: arch.y, m: arch.m };
     var R = { title: 'کەشفا مۆلەتێن کارمەندی', subtitle: arch.emp + ' · ' + repTitle(R0),
       sub2: 'عەریزە: ' + ar(p.n) + ' · ئاسایی: ' + ar(p.annual) + ' ڕۆژ · نەخوەشی: ' + ar(p.sick) + ' ڕۆژ · بکارهاتی: ' + ar(S.used) + ' ژ ' + ar(S.ent) + ' · مای: ' + ar(S.left),
       perPage: per, pages: Math.max(1, Math.ceil(data.length / per)),
       cols: [{ w: 5, num: true }, { w: 15, num: true }, { w: 20 }, { w: 16, num: true }, { w: 16, num: true }, { w: 14 }, { w: 15 }],
-      head: ['#', 'ژمارە', 'جۆر', 'ژ ڕێکەفتی', 'هەتا', 'ماوە', 'دۆخ'], rows: data, total: null };
+      head: ['#', 'ژمارە', 'جۆر', 'ژ ڕێکەفتی', 'هەتا', 'ماوە'], rows: data, total: null };
     await tablePdf(R, 'statement - ' + fileSafe(arch.emp) + ' - ' + arch.y + (arch.m ? '-' + pad2(arch.m) : '') + '.pdf', 'کەشفا ' + arch.emp + ' ' + repTitle(R0),
       'کەشفا مۆلەتێن کارمەندی ٠١٢٣٤٥٦٧٨٩ ' + arch.emp + ' ' + data.map(function (r) { return r.join(' '); }).join(' '));
   }
@@ -1453,7 +1625,7 @@ input[type=range]{width:100%}
   function repRows() {
     var yr = rep.y, mo = rep.m, map = {}, order = [];
     records.forEach(function (r) {
-      if (r.status === 'rejected' || !r.leave || r.leave.y !== yr || (mo && r.leave.m !== mo)) return;
+      if (!r.leave || r.leave.y !== yr || (mo && r.leave.m !== mo)) return;
       var k = trimName(r.name) || '—';
       if (!map[k]) { map[k] = { name: k, n: 0, annual: 0, sick: 0, hours: 0 }; order.push(k); }
       var g = map[k]; g.n++;
@@ -1471,8 +1643,7 @@ input[type=range]{width:100%}
     var rows = repRows(), tot = rows.reduce(function (a, g) { a.n += g.n; a.annual += g.annual; a.sick += g.sick; a.hours += g.hours; return a; }, { n: 0, annual: 0, sick: 0, hours: 0 });
     V.append(h('div', { class: 'card' }, h('h2', { text: 'ڕاپۆرتا مۆلەتان' }),
       h('div', { class: 'grid2' }, fld('ساڵ', 'r-year', ysel), fld('مەه', 'r-month', msel)),
-      h('div', { class: 'row' }, h('button', { class: 'btn small primary', id: 'r-pdf', type: 'button', text: 'PDF', onclick: reportPdf }), btn('CSV', '', reportCsv, 'r-csv')),
-      h('p', { class: 'hint', text: 'عەریزێن ڕەتکری د ژمارتنێ دا نینن.' })));
+      h('div', { class: 'row' }, h('button', { class: 'btn small primary', id: 'r-pdf', type: 'button', text: 'PDF', onclick: reportPdf }), btn('CSV', '', reportCsv, 'r-csv'))));
     var body = h('tbody');
     rows.forEach(function (g) {
       body.append(h('tr', {}, h('td', {}, h('button', { class: 'btn small', type: 'button', text: g.name, onclick: function () { arch.emp = g.name; arch.y = rep.y; arch.m = rep.m; moreTab = 'archive'; renderMore(); } })),
@@ -1691,6 +1862,7 @@ input[type=range]{width:100%}
     if (WEB) {
       var ef = h('input', { type: 'file', id: 'imp-enc', class: 'in', accept: '.enc,application/octet-stream' }), ep = h('input', { class: 'in', id: 'imp-enc-pw', type: 'password', placeholder: 'پاسۆۆردا ڤی فایلی', autocomplete: 'off' });
       var op = h('input', { class: 'in', id: 'pw-old', type: 'password', placeholder: 'پاسۆۆردا نوکە', autocomplete: 'current-password' }), np = h('input', { class: 'in', id: 'pw-new', type: 'password', placeholder: 'پاسۆۆردا نوی (٨ پیت و زێدەتر)', autocomplete: 'new-password' });
+      V.append(syncCard());
       V.append(h('div', { class: 'card' }, h('h2', { text: 'کۆپییا پاراستنێ ب پاسۆۆرد' }),
         h('p', { class: 'hint', text: 'عەریز و کارمەند ل سەر ڤی ئامیری دهێنە پاراستن. کۆپییەکێ د «Files» یان iCloud دا بپارێزە. ئەڤ فایلە ب هەمان پاسۆۆرد هاتیە قفلکرن.' }),
         h('p', { class: 'hint', id: 'bk-state', text: unbacked() ? ar(unbacked()) + ' عەریزە ژ کۆپییا دوماهیێ نوینە.' : 'هەمی عەریز د کۆپییا دوماهیێ دا نە.' }),
@@ -1795,10 +1967,17 @@ input[type=range]{width:100%}
       var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
       if (f) importPdf(f);
     });
-    document.addEventListener('visibilitychange', function () { if (document.hidden && WEB) webFlush(); else if (!document.hidden && view === 'main' && !busy) TODAY = new Date(); });
+    document.addEventListener('visibilitychange', function () { if (document.hidden && WEB) webFlush(); else if (!document.hidden) { if (WEB && ghOn()) syncSoon(800); if (view === 'main' && !busy) TODAY = new Date(); } });
     window.addEventListener('pagehide', function () { if (WEB) webFlush(); });
     window.addEventListener('hashchange', function () { if (WEB && !encKey) return; var s = parseScan(); if (s) { scan = s; scanLoading = false; if (view === 'more') setView('main'); else buildMain(); window.scrollTo(0, 0); } });
-    if (WEB) { unlockFlow(boot); return; }
+    if (WEB) {
+      try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) { }
+      unlockFlow(function () {
+        var wait = !!parseScan() && ghOn();
+        if (wait) { syncNow().then(boot, boot); } else { boot(); if (ghOn()) syncSoon(300); }
+      });
+      return;
+    }
     loadLocal(); boot();
     init().then(function () { if (scanLoading) setTimeout(function () { scanLoading = false; if (scan && view === 'main') buildMain(); }, 1500); });
   }
