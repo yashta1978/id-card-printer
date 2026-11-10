@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>چاپکرنا ناسنامان — v2</title>
+<title>چاپکرنا ناسنامان — v3</title>
 <style>
 :root{--ink:#14213d;--muted:#667085;--line:#e4e7ec;--bg:#f4f6fa;--brand:#1f6feb;--brand2:#0b4fc2;--ok:#0a7d4f;--warn:#b54708}
 *{box-sizing:border-box}
@@ -76,10 +76,11 @@ input[type=number],select{font:inherit;padding:7px 10px;border:1px solid #d0d5dd
   <div class="step"><i>1</i> وێنەکان زێدە بکە</div>
   <div class="drop" id="drop">
     <b>+ وێنەیێن ناسنامان هەلبژێرە</b>
-    <span class="hint">هەتا 8 وێنە ب جارەکێ: پێشی 1، پاشی 1، پێشی 2، پاشی 2 ... — یان ل سەر هەر چوارگۆشەکێ ل خوارێ بکلیک بکە</span>
+    <span class="hint">هەتا 8 وێنە ب جارەکێ: هەر 2 وێنە یەک ناسنامەنە (پێشی و پاشی). ئەپ ب دەمێ وێنەگرتنێ ڕیز دکەت و پێشی ژ پاشی جودا دکەت. ئەگەر چ نەکر، دگەل ڕیزبەندیا هەلبژارتنێ دهێت. یان ل سەر هەر چوارگۆشەکێ ل خوارێ بکلیک بکە</span>
   </div>
   <div class="row">
     <label class="chk"><input type="checkbox" data-k="auto" checked> قصکرنا ئۆتۆماتیک یا ناسنامێ ل دەمێ زێدەکرنێ</label>
+    <label class="chk"><input type="checkbox" data-k="smart" checked> ڕیزکرن ب دەمێ وێنەگرتنێ و دیتنا پێشی/پاشی ئۆتۆماتیک</label>
     <button id="clearBtn" class="danger small" style="margin-inline-start:auto">پاقژکرنا هەمیان</button>
   </div>
   <div class="cards" id="cards"></div>
@@ -171,7 +172,7 @@ const OUT_W=1012, OUT_H=638;                // 300 dpi تقريباً
 const MK_LEN=3, MK_OFF=1.5;
 const KEY='idprint_settings_v2';
 const $=s=>document.querySelector(s);
-const S={gap:12,pos:'center',top:20,flip:'long',dx:0,dy:0,marks:true,outline:false,auto:true};
+const S={gap:12,pos:'center',top:20,flip:'long',dx:0,dy:0,marks:true,outline:false,auto:true,smart:true};
 try{Object.assign(S,JSON.parse(localStorage.getItem(KEY)||'{}'));}catch(e){}
 const saveS=()=>{try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}};   // إعدادات فقط، لا صور أبداً
 const slots=Array.from({length:8},()=>({img:null,src:null,p:null,canvas:null,url:null,manual:false}));
@@ -422,14 +423,73 @@ $('#cards').addEventListener('click',e=>{
   if(t){curSlot=+t.dataset.i;if(slots[curSlot].img)openCrop(curSlot);else $('#one').click();}
 });
 $('#one').addEventListener('change',e=>{const f=e.target.files[0];e.target.value='';if(f)loadFile(f,curSlot,true);});
-async function bulk(files){
-  let a=0,m=0;
-  for(const f of files){
-    const i=slots.findIndex(s=>!s.img);
-    if(i<0){toast('هەمی جه پڕ بوون، هندەک وێنە هاتنە فەرامۆشکرن');break;}
-    const r=await loadFile(f,i,false);if(r==='auto')a++;else if(r==='manual')m++;
+/* ---------- دیتنا ڕووێ پێشی (ڕووخسار، یان پارچەیەکا ڕەنگێ پێستێ) ---------- */
+async function faceScore(cnv){
+  if(!('FaceDetector' in window))return null;
+  try{
+    const fs=await new FaceDetector({fastMode:true,maxDetectedFaces:3}).detect(cnv);
+    if(!fs.length)return 0;
+    return fs.reduce((m,f)=>Math.max(m,f.boundingBox.width*f.boundingBox.height),0)/(cnv.width*cnv.height);
+  }catch(e){return null;}
+}
+function skinScore(cnv){
+  const w=253,h=160,c=document.createElement('canvas');c.width=w;c.height=h;
+  const ctx=c.getContext('2d',{willReadFrequently:true});ctx.drawImage(cnv,0,0,w,h);
+  const d=ctx.getImageData(0,0,w,h).data,N=w*h,sk=new Uint8Array(N);
+  for(let i=0;i<N;i++){
+    const R=d[i*4],G=d[i*4+1],B=d[i*4+2],Y=.299*R+.587*G+.114*B,Cb=128-.168736*R-.331264*G+.5*B,Cr=128+.5*R-.418688*G-.081312*B;
+    sk[i]=(Cr>=140&&Cr<=178&&Cb>=82&&Cb<=122&&Y>45&&Y<240&&R-G>=22&&R-B>=45)?1:0;
   }
-  if(a+m)toast(`هاتنە زێدەکرن: ${a+m} — ئۆتۆماتیک: ${a}${m?` — پێدڤی ب ڕێکخستنا ب دەست: ${m}`:''}`);
+  const lab=new Uint8Array(N),st=new Int32Array(N);let best=0;
+  for(let i0=0;i0<N;i0++){
+    if(!sk[i0]||lab[i0])continue;
+    let sp=0,cnt=0,x0=w,x1=0,y0=h,y1=0;st[sp++]=i0;lab[i0]=1;
+    while(sp){const i=st[--sp],x=i%w,y=(i/w)|0;cnt++;if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;
+      if(x>0&&sk[i-1]&&!lab[i-1]){lab[i-1]=1;st[sp++]=i-1;}
+      if(x<w-1&&sk[i+1]&&!lab[i+1]){lab[i+1]=1;st[sp++]=i+1;}
+      if(y>0&&sk[i-w]&&!lab[i-w]){lab[i-w]=1;st[sp++]=i-w;}
+      if(y<h-1&&sk[i+w]&&!lab[i+w]){lab[i+w]=1;st[sp++]=i+w;}}
+    const bw=x1-x0+1,bh=y1-y0+1,a=cnt/N,dens=cnt/(bw*bh),asp=bh/bw;
+    if(a>=0.012&&a<=0.30&&asp>=0.85&&asp<=1.9&&dens>=0.5&&a>best)best=a;     // كتلة مضغوطة بشكل صورة شخصية
+  }
+  return best;
+}
+async function whichIsFront(cA,cB){            // 'A' | 'B' | null (غير متأكد: يبقى الترتيب)
+  const fa=await faceScore(cA),fb=await faceScore(cB);
+  if(fa!==null&&fb!==null){
+    const A=fa>0.004,B=fb>0.004;
+    if(A&&!B)return 'A';if(B&&!A)return 'B';if(A&&B)return null;
+  }
+  const sa=skinScore(cA),sb=skinScore(cB);
+  if(sa>0&&sb===0)return 'A';if(sb>0&&sa===0)return 'B';
+  return null;
+}
+async function bulk(files){
+  files=files.filter(f=>f.type.startsWith('image/'));
+  if(!files.length){toast('ئەڤ فایلە وێنە نینە');return;}
+  let sorted=false;
+  if(S.smart){
+    const ts=files.map(f=>f.lastModified);
+    if(ts.every(t=>t>0)&&new Set(ts).size===ts.length){files=[...files].sort((a,b)=>a.lastModified-b.lastModified);sorted=true;}
+  }
+  let a=0,m=0,sw=0;const stat=r=>{if(r==='auto')a++;else if(r==='manual')m++;};
+  const sequential=async list=>{
+    for(const f of list){
+      const i=slots.findIndex(s=>!s.img);
+      if(i<0){toast('هەمی جه پڕ بوون، هندەک وێنە هاتنە فەرامۆشکرن');return;}
+      stat(await loadFile(f,i,false));
+    }
+  };
+  if(S.smart){
+    for(let k=0;k<files.length;k+=2){
+      const A=files[k],B=files[k+1],c=[0,1,2,3].find(c=>!slots[c*2].img&&!slots[c*2+1].img);
+      if(c===undefined||!B){await sequential(files.slice(k));break;}
+      stat(await loadFile(A,c*2,false));stat(await loadFile(B,c*2+1,false));
+      const fa=slots[c*2].canvas,fb=slots[c*2+1].canvas;
+      if(fa&&fb&&await whichIsFront(fa,fb)==='B'){swapCard(c);sw++;}
+    }
+  }else await sequential(files);
+  if(a+m)toast(`هاتنە زێدەکرن: ${a+m} — ئۆتۆماتیک: ${a}${m?` — پێدڤی ب ڕێکخستنا ب دەست: ${m}`:''}${sorted?' — ب دەمێ وێنەگرتنێ هاتنە ڕیزکرن':''}${sw?` — پێشی/پاشی هاتە ڤەگۆڕین: ${sw}`:''}`);
 }
 $('#drop').onclick=()=>$('#many').click();
 $('#many').addEventListener('change',e=>{const f=[...e.target.files];e.target.value='';bulk(f);});
@@ -523,7 +583,7 @@ async function makePDF(kind,open){
     toast('دروستکرنا PDF ...');
     const blob=await buildPDF(kind==='cal'?calPages():idPages()),url=URL.createObjectURL(blob);
     if(open&&w)w.location.href=url;
-    else{const a=document.createElement('a');a.href=url;a.download=kind==='cal'?'id-calibration-v2.pdf':'id-cards-A4-v2.pdf';document.body.appendChild(a);a.click();a.remove();}
+    else{const a=document.createElement('a');a.href=url;a.download=kind==='cal'?'id-calibration-v3.pdf':'id-cards-A4-v3.pdf';document.body.appendChild(a);a.click();a.remove();}
     toast('PDF ئامادەیە ✓');
   }catch(err){
     if(w)w.close();
@@ -534,7 +594,7 @@ $('#dlBtn').onclick=()=>makePDF('ids',false);
 $('#openBtn').onclick=()=>makePDF('ids',true);
 $('#calBtn').onclick=()=>makePDF('cal',false);
 
-window.__app={slots,S,detectCard,buildPDF,idPages,calPages,loadFile};   // للاختبار فقط
+window.__app={slots,S,detectCard,buildPDF,idPages,calPages,loadFile,bulk,skinScore,whichIsFront};   // للاختبار فقط
 renderAll();
 })();
 </script>
