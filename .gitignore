@@ -1,0 +1,10 @@
+# لا تُرفع أي هوية أو صورة أو PDF أبداً
+*.jpg
+*.jpeg
+*.png
+*.heic
+*.webp
+*.pdf
+*.tif
+*.tiff
+*.zip
