@@ -1,0 +1,1807 @@
+<!DOCTYPE html>
+<html lang="ckb" dir="rtl"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>عەریزا مۆلەتێ — ڤەرژنا ٢</title>
+<style>
+:root{--bg:#EDEFF3;--surface:#fff;--fg:#1B2433;--muted:#566176;--line:#D3D9E3;--accent:#1D4F91;--accent-fg:#fff;--danger:#B3261E;--ok:#1B6B3F;--ok-bg:#E1F2E8;--warn:#85500A;--warn-bg:#FBEBCF;--bad:#B3261E;--bad-bg:#FBE3E1;--font:"Noto Sans Arabic",Tahoma,Arial,sans-serif}
+@media (prefers-color-scheme:dark){:root{--bg:#12161D;--surface:#1A202A;--fg:#E6EAF1;--muted:#9DA8BC;--line:#2B3443;--accent:#86B4F2;--accent-fg:#0D1A2C;--danger:#F2958F;--ok:#7FD3A3;--ok-bg:#16301F;--warn:#F0C070;--warn-bg:#33280F;--bad:#F2958F;--bad-bg:#3A1A18;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:400 16px/1.6 var(--font);padding:14px max(14px,env(safe-area-inset-right)) 40px max(14px,env(safe-area-inset-left))}
+.app{direction:rtl;max-width:760px;margin:0 auto}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+header.top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+h1{font-size:1.25rem;margin:0}
+h2{font-size:1.1rem;margin:0 0 8px}h3{font-size:1rem;margin:0 0 8px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+.fld{display:flex;flex-direction:column;gap:4px;margin-bottom:10px}
+.fld label{font-size:.9rem;color:var(--muted)}
+.in{width:100%;min-height:44px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.in[aria-invalid=true]{border-color:var(--bad)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:420px){.grid2.stack{grid-template-columns:1fr}}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{min-height:44px;padding:8px 16px;border-radius:10px;border:1px solid var(--line);background:var(--surface);cursor:pointer}
+.btn.small{min-height:36px;padding:4px 12px;font-size:.9rem}
+.btn.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent);font-weight:700}
+.btn.big{width:100%;min-height:56px;font-size:1.2rem}
+.btn.danger{color:var(--danger);border-color:var(--danger)}
+.btn:disabled{opacity:.5;cursor:default}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px}
+.seg button{min-height:44px;border:1px solid var(--line);border-radius:10px;background:var(--surface);cursor:pointer;padding:4px 6px;font-size:.92rem}
+.seg button[aria-pressed=true]{background:var(--accent);color:var(--accent-fg);border-color:var(--accent);font-weight:700}
+.info{background:var(--bg);border-radius:10px;padding:10px 12px;margin:4px 0 12px;font-size:.95rem}
+.info b{font-weight:700}
+.alert{border-radius:10px;padding:8px 12px;margin:6px 0;background:var(--warn-bg);color:var(--warn);font-size:.92rem}
+.alert.bad{background:var(--bad-bg);color:var(--bad)}
+.ok{background:var(--ok-bg);color:var(--ok)}
+.hint{color:var(--muted);font-size:.85rem}
+.ltrd{unicode-bidi:isolate;direction:ltr;display:inline-block}
+details.dd{margin:0 0 10px;border:1px dashed var(--line);border-radius:10px;padding:6px 10px}
+details.dd summary{cursor:pointer;min-height:36px;display:flex;align-items:center;color:var(--muted)}
+.done{border:2px solid var(--ok);background:var(--ok-bg);color:var(--fg);border-radius:14px;padding:14px;margin-bottom:12px}
+.done .sn{font-size:1.5rem;font-weight:700}
+.tabs{display:flex;gap:6px;overflow-x:auto;margin-bottom:12px;padding-bottom:4px}
+.tabs button{flex:0 0 auto;min-height:40px;padding:4px 14px;border:1px solid var(--line);border-radius:20px;background:var(--surface);cursor:pointer}
+.tabs button[aria-selected=true]{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin:8px 0}
+.stat{background:var(--bg);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column}
+.stat .k{font-size:.8rem;color:var(--muted)}.stat .v{font-size:1.2rem;font-weight:700}
+.stat.neg .v,.neg{color:var(--bad)}
+.scroll{overflow-x:auto}
+table.tbl{border-collapse:collapse;width:100%;font-size:.9rem}
+.tbl th,.tbl td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+.empty{color:var(--muted);text-align:center;padding:12px}
+.ecard{display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;text-align:right;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);margin-bottom:8px;cursor:pointer}
+.ecard .n{font-weight:700}.ecard .s{font-size:.85rem;color:var(--muted)}
+.pcard{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px}
+.chk{display:flex;gap:8px;align-items:center;min-height:36px}
+.chk input{width:20px;height:20px}
+canvas.pad{width:100%;border:1px dashed var(--line);border-radius:10px;background:#fff;touch-action:none}
+canvas.prev{width:100%;height:auto;border:1px solid var(--line);background:#fff}
+.stamp-prev img{max-height:90px;background:#fff;border:1px solid var(--line);border-radius:8px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:20px 12px;z-index:20}
+.modal[hidden]{display:none}
+.mcard{background:var(--surface);border-radius:14px;padding:16px;width:100%;max-width:520px}
+.viewer{position:fixed;inset:0;background:var(--bg);overflow:auto;z-index:30;padding:12px}
+.viewer[hidden]{display:none}
+.viewer img{width:100%;max-width:700px;display:block;margin:10px auto;background:#fff}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);max-width:92vw;background:#1B2433;color:#fff;padding:10px 16px;border-radius:12px;z-index:40;font-size:.92rem}
+.toast[hidden]{display:none}
+.drop{border:2px dashed var(--line);border-radius:12px;padding:10px;text-align:center;color:var(--muted);font-size:.9rem;margin-top:10px}
+.drop.over{border-color:var(--accent);background:var(--bg)}
+.tag{font-size:.75rem;color:var(--muted)}
+.hol{list-style:none;padding:0;margin:8px 0}.hol li{display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--line)}
+input[type=range]{width:100%}
+</style></head><body>
+<div class="app" dir="rtl">
+  <header class="top">
+    <h1>عەریزا مۆلەتێ</h1>
+    <button class="btn" id="btn-more" type="button">زیاتر</button>
+  </header>
+  <main id="v-main"></main>
+  <section id="v-more" hidden></section>
+</div>
+<div class="viewer" id="viewer" role="dialog" aria-label="کۆپییا چاپکرنێ" hidden>
+  <button class="btn" id="viewer-close" type="button">داخستن</button>
+  <p class="hint">دەستێ خۆ ل سەر وێنەی بهێلە بو ماوەیەکێ، پاشی «پاشەکەفتکرنا وێنەی» یان «بەلاڤکرن» هەلبژێرە و چاپ بکە.</p>
+  <img id="viewer-img" alt="کۆپییا عەریزێ">
+</div>
+<div class="modal" id="modal" role="dialog" aria-modal="true" hidden></div>
+<datalist id="dl-place"></datalist><datalist id="dl-title"></datalist><datalist id="dl-dept"></datalist>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+<script>
+
+(function () {
+  'use strict';
+
+  /* fonts load on the side, so a slow font host can never hold the page back */
+  try {
+    var fl = document.createElement('link'); fl.rel = 'stylesheet';
+    fl.href = 'https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@600;700&family=Noto+Sans+Arabic:wght@400;500;700&display=swap';
+    document.head.appendChild(fl);
+  } catch (e) { }
+
+  /* ---------- helpers ---------- */
+  var DIG = '٠١٢٣٤٥٦٧٨٩';
+  function ar(v) { return String(v).replace(/\d/g, function (d) { return DIG[+d]; }); }
+  function pad2(n) { return String(n).padStart(2, '0'); }
+  function pad4(n) { return String(n).padStart(4, '0'); }
+  function $(s) { return document.querySelector(s); }
+  function range(a, b) { var r = []; for (var i = a; i <= b; i++) r.push(i); return r; }
+  function clamp(n, a, b) { return Math.max(a, Math.min(b, n)); }
+  function T(text) { return document.createTextNode(text); }
+  function ltr(text) { var b = document.createElement('bdi'); b.dir = 'ltr'; b.className = 'ltrd'; b.textContent = text; return b; }
+  function h(tag, p) {
+    var e = document.createElement(tag), k, i;
+    p = p || {};
+    for (k in p) {
+      var v = p[k];
+      if (v == null || v === false) continue;
+      if (k === 'class') e.className = v;
+      else if (k === 'text') e.textContent = v;
+      else if (k.slice(0, 2) === 'on') e.addEventListener(k.slice(2), v);
+      else if (k === 'value' || k === 'checked' || k === 'disabled' || k === 'hidden' || k === 'selected') e[k] = v;
+      else e.setAttribute(k, v === true ? '' : v);
+    }
+    for (i = 2; i < arguments.length; i++) {
+      var c = arguments[i];
+      if (c == null || c === false) continue;
+      if (Array.isArray(c)) { c.forEach(function (x) { if (x != null && x !== false) e.append(x); }); }
+      else e.append(c);
+    }
+    return e;
+  }
+  function clear(e) { while (e.firstChild) e.removeChild(e.firstChild); return e; }
+  function uid(p) { return p + Date.now().toString(36) + Math.random().toString(36).slice(2, 5); }
+
+  /* ---------- dates ---------- */
+  function dt(o) { return new Date(o.y, o.m - 1, o.d); }
+  function od(d) { return { y: d.getFullYear(), m: d.getMonth() + 1, d: d.getDate() }; }
+  function addD(o, n) { var d = dt(o); d.setDate(d.getDate() + n); return od(d); }
+  function dkey(o) { return o.y + '-' + pad2(o.m) + '-' + pad2(o.d); }
+  function byLeave(a, b) {
+    var c = cmpD(a.leave, b.leave); if (c) return c;
+    var sa = a.serial ? a.serial.y * 100000 + a.serial.n : 0, sb = b.serial ? b.serial.y * 100000 + b.serial.n : 0;
+    return (sa - sb) || String(a.createdAt).localeCompare(String(b.createdAt));
+  }
+  function cmpD(a, b) { return a.y !== b.y ? a.y - b.y : a.m !== b.m ? a.m - b.m : a.d - b.d; }
+  function same(a, b) { return a.y === b.y && a.m === b.m && a.d === b.d; }
+  function dow(o) { return dt(o).getDay(); }
+  function fmtD(o, sep) { sep = sep || '/'; return ar(o.y) + sep + ar(pad2(o.m)) + sep + ar(pad2(o.d)); }
+  function parseKey(s) { var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || ''); return m ? { y: +m[1], m: +m[2], d: +m[3] } : null; }
+  var TODAY = new Date();
+  function today() { return { y: TODAY.getFullYear(), m: TODAY.getMonth() + 1, d: TODAY.getDate() }; }
+
+  var WEEK = ['ئێک شەمبی', 'دوو شەمبی', 'سێ شەمبی', 'چار شەمبی', 'پێنج شەمبی', 'هەینی', 'شەمبی']; /* Sunday..Saturday */
+  var MONTHS = ['کانونا دوویێ', 'شوبات', 'ئادار', 'نیسان', 'ئایار', 'حەزیران', 'تەموز', 'ئاب', 'ئەیلول', 'تشرینا ئێکێ', 'تشرینا دووێ', 'کانونا ئێکێ'];
+
+  /* ---------- the petition wording ---------- */
+  var L = {
+    to: 'بو / ڕێڤەبەرێ بەشێ ئاکنجی بوونا زاخو زور بەرێز',
+    b1: 'داخازێ ژ هەوەیێن بەرێز دکەم رازیبن لسەر داخازا من یا دەستیردانێ بو ماوێ ',
+    b3: ' ل روژا ',
+    b5: ' و بریار یا جەنابێ هەوەیێن بەرێزە .',
+    closing: 'دگەل ڕێزگرتنێ .....',
+    signer: 'داخازکەر',
+    deptLabel: 'هوبا '
+  };
+  var TYPES = {
+    annual: { name: 'مۆلەتا ئاسایی', unit: 'روژ', subj: 'ب / مۆلەت', b4: ' ، ژبو ئەنجامدانا کارەکێ فەر ل ', ph: 'سنورێ…' },
+    sick: { name: 'مۆلەتا نەخوەشیێ', unit: 'روژ', subj: 'ب / مۆلەتا نەخوەشیێ', b4: ' ، ژ ئەگەرێ نەخوەشیا من و وەرگرتنا چارەسەریێ ل ', ph: 'نەخوەشخانە…' },
+    hourly: { name: 'مۆلەتا کاتی', unit: 'سەعەت', subj: 'ب / مۆلەتا کاتی', b4: ' ، ژبو ئەنجامدانا کارەکێ فەر ل ', ph: 'سنورێ…' }
+  };
+  var STATUS = { draft: 'ئامادەکری', sent: 'هاتیە پێشکێشکرن', approved: 'پەسەندکری', rejected: 'ڕەتکری' };
+  var STATUS_KEYS = ['draft', 'sent', 'approved', 'rejected'];
+  function typeOf(t) { return TYPES[t] || TYPES.annual; }
+  var DEF_CONN = 'ل ڕێکەفتی';
+  function curL(t) {
+    var d = typeOf(t), o = (settings.types || {})[t] || {}, c = settings.common || {};
+    function pk(v, def) { v = typeof v === 'string' ? v.replace(/\s+/g, ' ').trim() : ''; return v || String(def).replace(/\s+/g, ' ').trim(); }
+    return { to: pk(c.to, L.to), subj: pk(o.subj, d.subj), b1: pk(c.b1, L.b1) + ' ', b2: ' ' + pk(o.unit, d.unit) + ' ' + pk(o.conn, DEF_CONN) + ' ',
+      b3: ' ' + pk(c.b3, L.b3) + ' ', b4: ' ' + pk(o.b4, d.b4) + ' ', b5: ' ' + pk(c.b5, L.b5), closing: pk(c.closing, L.closing),
+      signer: pk(c.signer, L.signer), deptLabel: pk(c.deptLabel, L.deptLabel) + ' ' };
+  }
+
+  /* ---------- state ---------- */
+  function defSettings() {
+    return { weekend: 'frisat', holidays: [], entitlement: 30, showSerial: true, showQr: true, useSig: true, useStamp: true, extras: [], types: {}, common: {}, serials: {} };
+  }
+  function normSettings(o) {
+    var d = defSettings(); o = o || {};
+    if (['fri', 'frisat', 'none'].indexOf(o.weekend) >= 0) d.weekend = o.weekend;
+    if (Array.isArray(o.holidays)) d.holidays = o.holidays.filter(function (x) { return x && parseKey(x.d); }).map(function (x) { return { d: x.d, n: String(x.n || '') }; });
+    if (typeof o.entitlement === 'number' && o.entitlement >= 0 && o.entitlement <= 366) d.entitlement = o.entitlement;
+    if (typeof o.showSerial === 'boolean') d.showSerial = o.showSerial;
+    if (typeof o.showQr === 'boolean') d.showQr = o.showQr;
+    if (typeof o.useSig === 'boolean') d.useSig = o.useSig;
+    if (typeof o.useStamp === 'boolean') d.useStamp = o.useStamp;
+    if (Array.isArray(o.extras)) d.extras = o.extras.slice(0, 3).filter(function (x) { return x && isFinite(+x.x) && isFinite(+x.y); }).map(function (x) { return { x: clamp(+x.x, 0.02, 0.98), y: clamp(+x.y, 0.02, 0.98) }; });
+    var TK = ['subj', 'unit', 'conn', 'b4'], CK = ['to', 'b1', 'b3', 'b5', 'closing', 'signer', 'deptLabel'];
+    if (o.types && typeof o.types === 'object') Object.keys(TYPES).forEach(function (t) {
+      var s = o.types[t]; if (!s || typeof s !== 'object') return;
+      TK.forEach(function (k) { if (typeof s[k] === 'string' && s[k].trim()) (d.types[t] || (d.types[t] = {}))[k] = s[k]; });
+    });
+    if (o.common && typeof o.common === 'object') CK.forEach(function (k) { if (typeof o.common[k] === 'string' && o.common[k].trim()) d.common[k] = o.common[k]; });
+    if (o.serials && typeof o.serials === 'object') d.serials = JSON.parse(JSON.stringify(o.serials));
+    return d;
+  }
+  var settings = defSettings();
+  var stamp = null, sigImg = null;
+  var records = [];
+  var employees = [];
+  var pend = {};
+  var ready = false, busy = false;
+  var store = { mode: 'local', base: null };
+  var dl = null, WEB = false;
+  var cloudPending = false, inflight = 0, deferred = {};
+
+
+  /* ---------- working days ---------- */
+  function holMap() { var m = {}; settings.holidays.forEach(function (x) { m[x.d] = x.n || '•'; }); return m; }
+  function isOff(o) {
+    var w = dow(o), k = settings.weekend;
+    if (k === 'fri' && w === 5) return true;
+    if (k === 'frisat' && (w === 5 || w === 6)) return true;
+    return !!holMap()[dkey(o)];
+  }
+  function endOf(leave, days) {
+    var o = leave, n = 0, g = 0;
+    while (g++ < 900) { if (!isOff(o)) { n++; if (n >= days) return o; } o = addD(o, 1); }
+    return o;
+  }
+  function retAfter(end) { var o = addD(end, 1), g = 0; while (isOff(o) && g++ < 60) o = addD(o, 1); return o; }
+  function workdays(a, b) {
+    if (cmpD(b, a) < 0) return 0;
+    var o = a, n = 0, g = 0;
+    while (cmpD(o, b) <= 0 && g++ < 900) { if (!isOff(o)) n++; o = addD(o, 1); }
+    return n;
+  }
+  function rangeOf(r) {
+    if ((r.type || 'annual') === 'hourly') return { a: r.leave, b: r.leave };
+    return { a: r.leave, b: endOf(r.leave, Math.max(1, +r.days || 1)) };
+  }
+
+  /* ---------- people lookups ---------- */
+  function trimName(n) { return String(n || '').replace(/\s+/g, ' ').trim(); }
+  function findEmp(id) { for (var i = 0; i < employees.length; i++) if (employees[i].id === id) return employees[i]; return null; }
+  function findEmpByName(n) { n = trimName(n); if (!n) return null; for (var i = 0; i < employees.length; i++) if (trimName(employees[i].name) === n) return employees[i]; return null; }
+  function entOf(name) { var e = findEmpByName(name); return e && typeof e.entitlement === 'number' ? e.entitlement : settings.entitlement; }
+  function usedDays(name, year, exceptId) {
+    var n = 0; name = trimName(name);
+    records.forEach(function (r) {
+      if ((r.type || 'annual') !== 'annual' || r.status === 'rejected' || r.id === exceptId) return;
+      if (trimName(r.name) !== name || !r.leave || r.leave.y !== year) return;
+      n += (+r.days || 0);
+    });
+    return n;
+  }
+  function overlaps(name, st, exceptId) {
+    var out = [], me = rangeOf(st); name = trimName(name);
+    if (!name || st.type === 'hourly') return out;
+    records.forEach(function (r) {
+      if (r.id === exceptId || r.status === 'rejected' || (r.type || 'annual') === 'hourly' || trimName(r.name) !== name || !r.leave) return;
+      var o = rangeOf(r);
+      if (cmpD(o.a, me.b) <= 0 && cmpD(me.a, o.b) <= 0) out.push({ a: o.a, b: o.b });
+    });
+    return out;
+  }
+  /* ---------- memory: queue, local mirror, cloud ---------- */
+  var chain = Promise.resolve();
+  function q(fn) { var p = chain.then(fn); chain = p.catch(function () { }); return p; }
+  var warned = false;
+  function warnCloud() { if (!warned) { warned = true; toast('نەشیا ل هەژمارا تە پاشەکەفت بکەت. ل ڤی وێبگەری هاتە پاشەکەفتکرن و دێ پاشی هێتە ناردن.'); } }
+  function stripId(o) { var c = {}, k; for (k in o) if (k !== 'id') c[k] = o[k]; return c; }
+  function mirror() {
+    if (WEB) { webPersist(); return; }
+    try { localStorage.setItem('petition-v2', JSON.stringify({ records: records, employees: employees, settings: settings, stamp: stamp, sig: sigImg, pend: pend })); } catch (e) { }
+  }
+  function normPos(p) { return p && isFinite(+p.x) && isFinite(+p.y) ? { x: clamp(+p.x, 0.02, 0.98), y: clamp(+p.y, 0.02, 0.98) } : null; }
+  function normX(a) {
+    return (Array.isArray(a) ? a : []).slice(0, 6).filter(function (x) { return x && x.d && isFinite(+x.d.y) && isFinite(+x.d.m) && isFinite(+x.d.d); }).map(function (x) {
+      return { id: String(x.id || uid('x_')), d: { y: +x.d.y, m: +x.d.m, d: +x.d.d }, x: clamp(+x.x || 0.5, 0.02, 0.98), y: clamp(+x.y || 0.1, 0.02, 0.98), auto: !!x.auto };
+    });
+  }
+  function normRec(r) {
+    r = Object.assign({}, r);
+    if (!TYPES[r.type]) r.type = 'annual';
+    if (STATUS_KEYS.indexOf(r.status) < 0) r.status = 'draft';
+    r.days = +r.days || 0; r.hours = +r.hours || 1;
+    if (r.type !== 'hourly' && r.days < 1) r.days = 1;
+    r.extras = normX(r.extras); r.sigPos = normPos(r.sigPos); r.stampPos = normPos(r.stampPos);
+    r.sigScale = clamp(+r.sigScale || 1, 0.5, 2); r.stampScale = clamp(+r.stampScale || 1, 0.5, 2);
+    return r;
+  }
+  function loadLocal() {
+    var raw = null;
+    try { raw = JSON.parse(localStorage.getItem('petition-v2') || 'null'); } catch (e) { }
+    if (raw) {
+      records = (raw.records || []).map(normRec); employees = raw.employees || []; settings = normSettings(raw.settings); stamp = raw.stamp || null; sigImg = raw.sig || null; pend = raw.pend || {};
+    }
+    sortRecords(); sortEmps();
+  }
+  function sortRecords() { records.sort(function (a, b) { return String(b.createdAt).localeCompare(String(a.createdAt)); }); }
+  function sortEmps() { employees.sort(function (a, b) { return String(a.name || '').localeCompare(String(b.name || ''), 'ar'); }); }
+  function upsert(list, o) { for (var i = 0; i < list.length; i++) if (list[i].id === o.id) { list[i] = o; return; } list.push(o); }
+
+  function ref(col, id) { return store.base.collection(col).doc(id); }
+  function currentDoc(col, id) {
+    if (col === 'petitions') { for (var i = 0; i < records.length; i++) if (records[i].id === id) return stripId(records[i]); }
+    if (col === 'employees') { var e = findEmp(id); if (e) return stripId(e); }
+    if (col === 'meta' && id === 'settings') return settings;
+    if (col === 'meta' && id === 'stamp') return { img: stamp || '' };
+    if (col === 'meta' && id === 'sig') return { img: sigImg || '' };
+    return null;
+  }
+  /* put / del never throw: a failed cloud write is remembered and retried on the next visit */
+  function settle() { inflight--; if (!inflight) { var d = deferred; deferred = {}; Object.keys(d).forEach(function (k) { d[k](); }); } }
+  function put(col, id, obj) {
+    return q(async function () {
+      mirror();
+      if (store.mode !== 'cloud') { if (cloudPending) { pend[col + '/' + id] = 'set'; mirror(); } return true; }
+      inflight++;
+      try { await ref(col, id).set(obj); delete pend[col + '/' + id]; mirror(); return true; }
+      catch (e) { pend[col + '/' + id] = 'set'; mirror(); warnCloud(); return false; }
+      finally { settle(); }
+    });
+  }
+  function del(col, id) {
+    return q(async function () {
+      mirror();
+      if (store.mode !== 'cloud') { if (cloudPending) { pend[col + '/' + id] = 'del'; mirror(); } return true; }
+      inflight++;
+      try { await ref(col, id).delete(); delete pend[col + '/' + id]; mirror(); return true; }
+      catch (e) { pend[col + '/' + id] = 'del'; mirror(); warnCloud(); return false; }
+      finally { settle(); }
+    });
+  }
+  async function pushPend() {
+    var keys = Object.keys(pend);
+    for (var i = 0; i < keys.length; i++) {
+      var p = keys[i].split('/'), col = p[0], id = p[1];
+      try {
+        if (pend[keys[i]] === 'del') await ref(col, id).delete();
+        else { var o = currentDoc(col, id); if (o) await ref(col, id).set(o); }
+        delete pend[keys[i]];
+      } catch (e) { }
+    }
+    mirror();
+  }
+  function mergeCloud(col, cloud, local) {
+    var out = cloud.filter(function (o) { return pend[col + '/' + o.id] !== 'del'; });
+    local.forEach(function (o) {
+      if (pend[col + '/' + o.id] === 'set') { var hit = -1; out.forEach(function (c, i) { if (c.id === o.id) hit = i; }); if (hit >= 0) out[hit] = o; else out.push(o); }
+    });
+    return out;
+  }
+  function fromSnap(snap) { return snap.docs.map(function (d) { var o = Object.assign({}, d.data()); o.id = d.id; return o; }); }
+  function saveSettings() { return put('meta', 'settings', settings); }
+  function saveStamp() { return put('meta', 'stamp', { img: stamp || '' }); }
+  function saveSig() { return put('meta', 'sig', { img: sigImg || '' }); }
+  function saveRec(r) { return put('petitions', r.id, stripId(r)); }
+  function saveEmp(e) { return put('employees', e.id, stripId(e)); }
+  /* RENDER-START */
+  /* Draws the A4 sheet straight onto a canvas (794 x 1123 units). No DOM capture, so nothing can come out blank.
+     cfg.txt(text, xLeft, yCenter, width) receives every line, so the PDF can carry a searchable text layer. */
+  function drawPetition(ctx, st, cfg) {
+    var L = cfg.L, WEEK = cfg.WEEK, ar = cfg.ar, pad2 = cfg.pad2, FF = cfg.family;
+    var W = 794, H = 1123, PADT = 118, PADX = 88, LH = 38, FS = 19, INK = '#141414';
+    var cw = W - 2 * PADX;
+    function emit(t, x, yc, w) { if (cfg.txt && t) cfg.txt(t, x, yc, w); }
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = INK; ctx.textBaseline = 'middle';
+    function font(bold, size) { ctx.font = (bold ? '700 ' : '400 ') + (size || FS) + 'px ' + FF; }
+    function wid(t, dir, bold) { font(bold); ctx.direction = dir; return ctx.measureText(t).width; }
+    function centered(t, cx, y, dir, bold) {
+      font(bold); ctx.direction = dir; ctx.textAlign = 'center'; ctx.fillText(t, cx, y);
+      emit(t, cx - ctx.measureText(t).width / 2, y, ctx.measureText(t).width);
+    }
+    function words(t, dir) { return t.split(/\s+/).filter(Boolean).map(function (x) { return { t: x, dir: dir || 'rtl' }; }); }
+    function dstr(o, sep) { return ar(o.y) + sep + ar(pad2(o.m)) + sep + ar(pad2(o.d)); }
+    function fitImg(img, cx, cy, mw, mh, blend) {
+      var iw = img.naturalWidth || img.width || 1, ih = img.naturalHeight || img.height || 1;
+      var k = Math.min(mw / iw, mh / ih), w = iw * k, hh = ih * k;
+      ctx.save();
+      if (blend) ctx.globalCompositeOperation = 'multiply';
+      ctx.drawImage(img, cx - w / 2, cy - hh / 2, w, hh);
+      ctx.restore();
+    }
+
+    if (cfg.serial) {
+      font(false, 15); ctx.fillStyle = '#555';
+      ctx.direction = 'ltr'; ctx.textAlign = 'left';
+      var nw = ctx.measureText(cfg.serial).width;
+      ctx.fillText(cfg.serial, PADX, 62);
+      ctx.direction = 'rtl'; var lab = 'ژمارە:', lw = ctx.measureText(lab).width;
+      ctx.fillText(lab, PADX + nw + 8, 62);
+      emit(lab + ' ' + cfg.serial, PADX, 62, nw + 8 + lw);
+      ctx.fillStyle = INK;
+    }
+
+    var y = PADT;
+    centered(L.to, W / 2, y + LH / 2, 'rtl', true); y += LH;
+    centered(L.subj, W / 2, y + LH / 2, 'rtl', true); y += LH;
+    centered(new Array(45).join('.'), W / 2, y + LH / 2, 'rtl', true); y += LH;
+
+    var count = st.type === 'hourly' ? st.hours : st.days;
+    var toks = [].concat(
+      words(L.b1), [{ t: '(' + ar(count) + ')', dir: 'ltr' }],
+      words(L.b2), [{ t: '(' + dstr(st.leave, '/') + ')', dir: 'ltr' }],
+      words(L.b3), words(WEEK[st.weekday]), words(L.b4), words(st.place), words(L.b5));
+    var space = wid(' ', 'rtl', false), lines = [], cur = [], curW = 0;
+    toks.forEach(function (k) {
+      k.w = wid(k.t, k.dir, false);
+      var add = cur.length ? space + k.w : k.w;
+      if (cur.length && curW + add > cw) { lines.push(cur); cur = [k]; curW = k.w; }
+      else { cur.push(k); curW += add; }
+    });
+    if (cur.length) lines.push(cur);
+
+    var bodyTop = y + 13;
+    lines.forEach(function (line, li) {
+      var cy = bodyTop + li * LH + LH / 2;
+      var sum = line.reduce(function (a, k) { return a + k.w; }, 0);
+      var last = li === lines.length - 1 || line.length < 2;
+      var gap = last ? space : (cw - sum) / (line.length - 1);
+      var xr = W - PADX;
+      line.forEach(function (k) {
+        var xl = xr - k.w;
+        font(false); ctx.direction = k.dir; ctx.textAlign = 'left';
+        ctx.fillText(k.t, xl, cy);
+        xr = xl - gap;
+      });
+      var tw = sum + gap * (line.length - 1);
+      emit(line.map(function (k) { return k.t; }).join(' '), W - PADX - tw, cy, tw);
+    });
+
+    var closeTop = bodyTop + lines.length * LH + 100;
+    centered(L.closing, W / 2, closeTop + LH / 2, 'rtl', false);
+
+    var l2 = st.title.trim() + '/ ' + st.name.trim();
+    var l3 = L.deptLabel + st.dept.trim();
+    var l4 = dstr(st.write, ' / ');
+    var pitch = LH + 15, sigGap = 0;
+    var off = 256, endY = closeTop + LH + off + LH / 2 + 3 * pitch + sigGap + LH / 2;
+    if (endY > H - 40) off = Math.max(70, off - (endY - (H - 40)));
+    var sigTop = closeTop + LH + off, sy = sigTop + LH / 2;
+    var widest = Math.max(wid(l2, 'rtl', false), wid(l3, 'rtl', false), 200);
+    var cxs = Math.max(PADX + 142, PADX + widest / 2);
+    centered(L.signer, cxs, sy, 'rtl', false);
+    centered(l2, cxs, sy + pitch, 'rtl', false);
+    centered(l3, cxs, sy + 2 * pitch, 'rtl', false);
+    centered(l4, cxs, sy + 3 * pitch, 'ltr', false);
+    /* signature sits above the signer label unless it was dragged elsewhere; stamp and extra dates go where they were put */
+    var ssc = st.sigScale || 1, tsc = st.stampScale || 1;
+    if (cfg.sigImg) { var sp = st.sigPos; fitImg(cfg.sigImg, sp ? sp.x * W : cxs, sp ? sp.y * H : sy - 20 - 33 * ssc, 190 * ssc, 66 * ssc, false); }
+    if (cfg.stampImg) { var tp = st.stampPos; fitImg(cfg.stampImg, tp ? tp.x * W : cxs + 78, tp ? tp.y * H : sy - 30, 104 * tsc, 104 * tsc, true); }
+    (st.extras || []).forEach(function (x) { centered(dstr(x.d, '/'), x.x * W, x.y * H, 'ltr', false); });
+    /* QR at the bottom right: opens this petition's page for the owner. Whole-unit modules keep it crisp. */
+    if (cfg.qr) {
+      var qm = cfg.qr, qn = qm.length, md = 2, qz = 4, qs = (qn + 2 * qz) * md, qx = W - PADX - qs, qy = H - 34 - qs, qr_, qc_;
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(qx, qy, qs, qs); ctx.fillStyle = '#000000';
+      for (qr_ = 0; qr_ < qn; qr_++) for (qc_ = 0; qc_ < qn; qc_++) if (qm[qr_][qc_]) ctx.fillRect(qx + (qc_ + qz) * md, qy + (qr_ + qz) * md, md, md);
+      ctx.fillStyle = INK;
+    }
+  }
+
+  /* A plain table page for the monthly report. */
+  function drawReport(ctx, rep, pg, cfg) {
+    var FF = cfg.family, W = 794, H = 1123, PADX = 70, cw = W - 2 * PADX, RH = 34, INK = '#141414';
+    function emit(t, x, yc, w) { if (cfg.txt && t) cfg.txt(t, x, yc, w); }
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = INK; ctx.textBaseline = 'middle';
+    function put(t, x, y, al, bold, size, dir) {
+      ctx.font = (bold ? '700 ' : '400 ') + (size || 16) + 'px ' + FF; ctx.direction = dir || 'rtl'; ctx.textAlign = 'left';
+      var w = ctx.measureText(t).width, xl = al === 'c' ? x - w / 2 : al === 'r' ? x - w : x;
+      ctx.fillText(t, xl, y); emit(t, xl, y, w); return w;
+    }
+    function trunc(t, mw, bold) {
+      ctx.font = (bold ? '700 ' : '400 ') + '15px ' + FF; ctx.direction = 'rtl';
+      if (ctx.measureText(t).width <= mw) return t;
+      while (t.length > 1 && ctx.measureText(t + '…').width > mw) t = t.slice(0, -1);
+      return t + '…';
+    }
+    put(rep.title, W / 2, 92, 'c', true, 24);
+    put(rep.subtitle, W / 2, 130, 'c', false, 16);
+    if (rep.sub2) put(rep.sub2, W / 2, 162, 'c', false, 14);
+    var tot = rep.cols.reduce(function (a, c) { return a + c.w; }, 0), y0 = rep.sub2 ? 204 : 176;
+    function row(cells, y, bold) {
+      var xr = W - PADX;
+      rep.cols.forEach(function (c, i) {
+        var wpx = cw * c.w / tot, t = trunc(String(cells[i] == null ? '' : cells[i]), wpx - 12, bold);
+        var dir = c.num ? 'ltr' : 'rtl';
+        if (c.num) put(t, xr - 8, y, 'r', bold, 15, dir); else put(t, xr - 8, y, 'r', bold, 15, dir);
+        xr -= wpx;
+      });
+    }
+    ctx.strokeStyle = INK; ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.moveTo(PADX, y0 - RH / 2 - 2); ctx.lineTo(W - PADX, y0 - RH / 2 - 2); ctx.stroke();
+    row(rep.head, y0, true);
+    ctx.beginPath(); ctx.moveTo(PADX, y0 + RH / 2); ctx.lineTo(W - PADX, y0 + RH / 2); ctx.stroke();
+    ctx.strokeStyle = '#c9ced8'; ctx.lineWidth = 1;
+    var from = pg * rep.perPage, rows = rep.rows.slice(from, from + rep.perPage);
+    rows.forEach(function (r, i) {
+      var y = y0 + RH + i * RH;
+      row(r, y, false);
+      ctx.beginPath(); ctx.moveTo(PADX, y + RH / 2); ctx.lineTo(W - PADX, y + RH / 2); ctx.stroke();
+    });
+    if (rep.total && pg === rep.pages - 1) {
+      var yt = y0 + RH + rows.length * RH + 4;
+      ctx.strokeStyle = INK; ctx.lineWidth = 1.4;
+      ctx.beginPath(); ctx.moveTo(PADX, yt - RH / 2); ctx.lineTo(W - PADX, yt - RH / 2); ctx.stroke();
+      row(rep.total, yt + 6, true);
+    }
+    put(cfg.footer + '  ' + ar(pg + 1) + ' / ' + ar(rep.pages), W / 2, H - 50, 'c', false, 13);
+  }
+  /* RENDER-END */
+
+  /* PDF writer: a JPEG per page plus an invisible, searchable text layer. No library to download. */
+  function jpegSize(b) {
+    var i = 2;
+    while (i < b.length) {
+      if (b[i] !== 0xFF) { i++; continue; }
+      var m = b[i + 1];
+      if (m >= 0xC0 && m <= 0xCF && m !== 0xC4 && m !== 0xC8 && m !== 0xCC) return { h: (b[i + 5] << 8) | b[i + 6], w: (b[i + 7] << 8) | b[i + 8] };
+      i += 2 + ((b[i + 2] << 8) | b[i + 3]);
+    }
+    throw new Error('bad-jpeg');
+  }
+  /* The text layer is stored in visual order (left to right), the way PDF producers do it, so viewers restore the logical order on copy and search. */
+  function isLtrCh(c) { return /[0-9A-Za-z\u0660-\u0669\u06F0-\u06F9]/.test(c); }
+  var MIRROR = {};
+  function toVisual(s) {
+    var runs = [], i = 0, n = s.length, j;
+    while (i < n) {
+      if (isLtrCh(s[i])) {
+        j = i + 1;
+        while (j < n && (isLtrCh(s[j]) || ('/:.,-'.indexOf(s[j]) >= 0 && j + 1 < n && isLtrCh(s[j + 1])))) j++;
+        runs.push({ l: 1, t: s.slice(i, j) });
+      } else {
+        j = i + 1; while (j < n && !isLtrCh(s[j])) j++;
+        runs.push({ l: 0, t: s.slice(i, j) });
+      }
+      i = j;
+    }
+    return runs.reverse().map(function (r) { return r.l ? r.t : r.t.split('').reverse().map(function (c) { return MIRROR[c] || c; }).join(''); }).join('');
+  }
+  function hex4(n) { return ('0000' + n.toString(16)).slice(-4).toUpperCase(); }
+  function makePdf(pages, title, payload) {
+    var parts = [], offs = {}, len = 0, i, k;
+    function enc(t) { var u = new Uint8Array(t.length); for (var j = 0; j < t.length; j++) u[j] = t.charCodeAt(j) & 255; return u; }
+    function add(u) { parts.push(u); len += u.length; }
+    function begin(n) { offs[n] = len; add(enc(n + ' 0 obj\n')); }
+    function end() { add(enc('\nendobj\n')); }
+    function strm(n, dict, bytes) { begin(n); add(enc('<< ' + dict + ' /Length ' + bytes.length + ' >>\nstream\n')); add(bytes); add(enc('\nendstream')); end(); }
+    function bytesOf(dataUrl) { var bin = atob(dataUrl.split(',')[1]), u = new Uint8Array(bin.length); for (var j = 0; j < bin.length; j++) u[j] = bin.charCodeAt(j); return u; }
+
+    var cid = {}, uni = [], next = 1;
+    pages.forEach(function (p) { (p.txt || []).forEach(function (x) { for (k = 0; k < x.t.length; k++) { var c = x.t.charCodeAt(k); if (!cid[c]) { cid[c] = next++; uni.push(c); } } }); });
+    var n = pages.length, FIRST = 7, INFO = FIRST + 3 * n, PL = INFO + 1;
+
+    add(enc('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n'));
+    begin(1); add(enc('<< /Type /Catalog /Pages 2 0 R >>')); end();
+    var kids = []; for (i = 0; i < n; i++) kids.push((FIRST + 3 * i) + ' 0 R');
+    begin(2); add(enc('<< /Type /Pages /Kids [' + kids.join(' ') + '] /Count ' + n + ' >>')); end();
+    begin(3); add(enc('<< /Type /Font /Subtype /Type0 /BaseFont /Arial-Unicode /Encoding /Identity-H /DescendantFonts [4 0 R] /ToUnicode 6 0 R >>')); end();
+    begin(4); add(enc('<< /Type /Font /Subtype /CIDFontType2 /BaseFont /Arial-Unicode /CIDSystemInfo << /Registry (Adobe) /Ordering (Identity) /Supplement 0 >> /FontDescriptor 5 0 R /DW 500 /CIDToGIDMap /Identity >>')); end();
+    begin(5); add(enc('<< /Type /FontDescriptor /FontName /Arial-Unicode /Flags 4 /FontBBox [0 -250 1000 900] /ItalicAngle 0 /Ascent 800 /Descent -200 /CapHeight 700 /StemV 80 >>')); end();
+    var cm = '/CIDInit /ProcSet findresource begin\n12 dict begin\nbegincmap\n/CIDSystemInfo << /Registry (Adobe) /Ordering (UCS) /Supplement 0 >> def\n/CMapName /Adobe-Identity-UCS def\n/CMapType 2 def\n1 begincodespacerange\n<0000> <FFFF>\nendcodespacerange\n';
+    for (i = 0; i < uni.length; i += 100) {
+      var chunk = uni.slice(i, i + 100);
+      cm += chunk.length + ' beginbfchar\n';
+      chunk.forEach(function (u, j) { cm += '<' + hex4(i + j + 1) + '> <' + hex4(u) + '>\n'; });
+      cm += 'endbfchar\n';
+    }
+    cm += 'endcmap\nCMapName currentdict /CMap defineresource pop\nend\nend';
+    strm(6, '', enc(cm));
+
+    var SX = 595.28 / 794, SY = 841.89 / 1123;
+    pages.forEach(function (p, pi) {
+      var pn = FIRST + 3 * pi, im = pn + 1, ct = pn + 2;
+      var jpg = bytesOf(p.jpeg), size = jpegSize(jpg);
+      begin(pn); add(enc('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /XObject << /Im0 ' + im + ' 0 R >> /Font << /F1 3 0 R >> >> /Contents ' + ct + ' 0 R >>')); end();
+      strm(im, '/Type /XObject /Subtype /Image /Width ' + size.w + ' /Height ' + size.h + ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode', jpg);
+      var c = 'q 595.28 0 0 841.89 0 0 cm /Im0 Do Q\nBT\n3 Tr\n';
+      (p.txt || []).forEach(function (x) {
+        if (!x.t || !(x.w > 0)) return;
+        var sz = Math.round(19 * SY * 100) / 100, wp = x.w * SX;
+        var tz = Math.max(10, Math.min(500, wp / (x.t.length * sz * 0.5) * 100));
+        var vt = toVisual(x.t), hx = ''; for (var j = 0; j < vt.length; j++) hx += hex4(cid[vt.charCodeAt(j)]);
+        c += '/F1 ' + sz + ' Tf ' + tz.toFixed(1) + ' Tz 1 0 0 1 ' + (x.x * SX).toFixed(2) + ' ' + (841.89 - (x.y + 6) * SY).toFixed(2) + ' Tm <' + hx + '> Tj\n';
+      });
+      c += 'ET\n';
+      strm(ct, '', enc(c));
+    });
+    var tt = 'FEFF'; for (i = 0; i < (title || '').length && i < 120; i++) tt += hex4(title.charCodeAt(i));
+    begin(INFO); add(enc('<< /Title <' + tt + '> /Producer (Petition)' + (payload ? ' /PetData ' + PL + ' 0 R' : '') + ' >>')); end();
+    if (payload) strm(PL, '/Type /PetData', enc('PETDATA1:' + payload + ':END'));
+
+    var total = payload ? PL : INFO, xref = len, x = 'xref\n0 ' + (total + 1) + '\n0000000000 65535 f \n';
+    for (i = 1; i <= total; i++) x += String(offs[i]).padStart(10, '0') + ' 00000 n \n';
+    add(enc(x + 'trailer\n<< /Size ' + (total + 1) + ' /Root 1 0 R /Info ' + INFO + ' 0 R >>\nstartxref\n' + xref + '\n%%EOF\n'));
+    var out = new Uint8Array(len), pos = 0;
+    parts.forEach(function (u) { out.set(u, pos); pos += u.length; });
+    return out.buffer;
+  }
+
+  function hasInk(cv) {
+    try {
+      var t = document.createElement('canvas'); t.width = 100; t.height = 140;
+      var tc = t.getContext('2d'); tc.drawImage(cv, 0, 0, 100, 140);
+      var d = tc.getImageData(0, 0, 100, 140).data, n = 0;
+      for (var i = 0; i < d.length; i += 4) if (d[i] < 235) n++;
+      return n > 40;
+    } catch (e) { return true; }
+  }
+  function loadImg(src) {
+    return new Promise(function (res) {
+      if (!src) return res(null);
+      var im = new Image(); im.onload = function () { res(im); }; im.onerror = function () { res(null); }; im.src = src;
+    });
+  }
+  var FAMILY = '"Noto Sans Arabic", Tahoma, Arial, sans-serif';
+  async function waitFonts(sample) {
+    if (!document.fonts) return;
+    try {
+      await Promise.race([
+        Promise.all([document.fonts.load('400 19px "Noto Sans Arabic"', sample), document.fonts.load('700 19px "Noto Sans Arabic"', sample)]),
+        new Promise(function (r) { setTimeout(r, 4000); })
+      ]);
+    } catch (fe) { }
+  }
+  function serialText(s) { return s ? ar(s.y) + '/' + ar(pad4(s.n)) : ''; }
+
+  function pdfOf(sheets, title, payload) {
+    return makePdf(sheets.map(function (s) { return { jpeg: s.cv.toDataURL('image/jpeg', 0.95), txt: s.txt }; }), title, payload);
+  }
+
+  /* ---------- tiny QR encoder (byte mode, error level M, versions 1-10) ---------- */
+  var QR = (function () {
+    var EXP = new Array(512), LOG = new Array(256), i, x = 1;
+    for (i = 0; i < 255; i++) { EXP[i] = x; LOG[x] = i; x <<= 1; if (x & 256) x ^= 0x11D; }
+    for (i = 255; i < 512; i++) EXP[i] = EXP[i - 255];
+    function mul(a, b) { return a && b ? EXP[LOG[a] + LOG[b]] : 0; }
+    function rsGen(n) { var g = [1], k, j; for (k = 0; k < n; k++) { var ng = new Array(g.length + 1).fill(0); for (j = 0; j < g.length; j++) { ng[j] ^= g[j]; ng[j + 1] ^= mul(g[j], EXP[k]); } g = ng; } return g; }
+    function rsEc(data, n) { var g = rsGen(n), r = new Array(n).fill(0), k, j; data.forEach(function (d) { var f = d ^ r[0]; r.shift(); r.push(0); for (j = 0; j < n; j++) r[j] ^= mul(g[j + 1], f); }); return r; }
+    /* [ec codewords per block, blocks of [count, data codewords]] for level M */
+    var SPEC = [null, [10, [[1, 16]]], [16, [[1, 28]]], [26, [[1, 44]]], [18, [[2, 32]]], [24, [[2, 43]]], [16, [[4, 27]]], [18, [[4, 31]]], [22, [[2, 38], [2, 39]]], [22, [[3, 36], [2, 37]]], [26, [[4, 43], [1, 44]]]];
+    var ALIGN = [null, [], [6, 18], [6, 22], [6, 26], [6, 30], [6, 34], [6, 22, 38], [6, 24, 42], [6, 26, 46], [6, 28, 50]];
+    function dataCap(v) { return SPEC[v][1].reduce(function (a, b) { return a + b[0] * b[1]; }, 0); }
+    function bl(x) { return 32 - Math.clz32(x); }
+    function bch(v, poly, deg) { var d = v << deg; while (bl(d) >= bl(poly)) d ^= poly << (bl(d) - bl(poly)); return d; }
+    function formatBits(mask) { var data = (0 << 3) | mask; /* M = 00 */ var b = (data << 10) | bch(data, 0x537, 10); return (b ^ 0x5412) & 0x7FFF; }
+    function versionBits(v) { return (v << 12) | bch(v, 0x1F25, 12); }
+    function encode(text) {
+      var bytes = unescape(encodeURIComponent(text)).split('').map(function (c) { return c.charCodeAt(0); });
+      var v; for (v = 1; v <= 10; v++) if (bytes.length + (v < 10 ? 2 : 3) <= dataCap(v)) break;
+      if (v > 10) return null;
+      var bits = [];
+      function put(val, len) { for (var k = len - 1; k >= 0; k--) bits.push((val >> k) & 1); }
+      put(4, 4); put(bytes.length, v < 10 ? 8 : 16); bytes.forEach(function (b) { put(b, 8); });
+      var cap = dataCap(v) * 8; for (i = 0; i < 4 && bits.length < cap; i++) bits.push(0);
+      while (bits.length % 8) bits.push(0);
+      var cw = []; for (i = 0; i < bits.length; i += 8) { var b = 0; for (var k = 0; k < 8; k++) b = (b << 1) | bits[i + k]; cw.push(b); }
+      for (var pad = 0; cw.length < dataCap(v); pad ^= 1) cw.push(pad ? 0x11 : 0xEC);
+      var blocks = [], pos = 0, ecn = SPEC[v][0];
+      SPEC[v][1].forEach(function (g) { for (var n = 0; n < g[0]; n++) { var d = cw.slice(pos, pos + g[1]); pos += g[1]; blocks.push({ d: d, e: rsEc(d, ecn) }); } });
+      var out = [], maxd = Math.max.apply(null, blocks.map(function (b) { return b.d.length; }));
+      for (i = 0; i < maxd; i++) blocks.forEach(function (b) { if (i < b.d.length) out.push(b.d[i]); });
+      for (i = 0; i < ecn; i++) blocks.forEach(function (b) { out.push(b.e[i]); });
+      var n = 17 + 4 * v, M = [], F = [], r, c;
+      for (r = 0; r < n; r++) { M.push(new Array(n).fill(false)); F.push(new Array(n).fill(false)); }
+      function setf(r, c, val) { if (r < 0 || c < 0 || r >= n || c >= n) return; M[r][c] = val; F[r][c] = true; }
+      function finder(r0, c0) { for (var a = -1; a <= 7; a++) for (var b2 = -1; b2 <= 7; b2++) { var inn = a >= 0 && a <= 6 && b2 >= 0 && b2 <= 6 && (a === 0 || a === 6 || b2 === 0 || b2 === 6 || (a >= 2 && a <= 4 && b2 >= 2 && b2 <= 4)); setf(r0 + a, c0 + b2, inn); } }
+      finder(0, 0); finder(0, n - 7); finder(n - 7, 0);
+      for (i = 8; i < n - 8; i++) { setf(6, i, i % 2 === 0); setf(i, 6, i % 2 === 0); }
+      var al = ALIGN[v];
+      al.forEach(function (ar_) { al.forEach(function (ac) {
+        if ((ar_ === 6 && ac === 6) || (ar_ === 6 && ac === al[al.length - 1]) || (ar_ === al[al.length - 1] && ac === 6)) return;
+        for (var a = -2; a <= 2; a++) for (var b2 = -2; b2 <= 2; b2++) setf(ar_ + a, ac + b2, Math.max(Math.abs(a), Math.abs(b2)) !== 1);
+      }); });
+      /* reserve format + version areas */
+      for (i = 0; i < 9; i++) { F[8][i] = true; F[i][8] = true; }
+      for (i = 0; i < 8; i++) { F[8][n - 1 - i] = true; F[n - 1 - i][8] = true; }
+      setf(n - 8, 8, true);
+      if (v >= 7) { var vb = versionBits(v); for (i = 0; i < 18; i++) { var bit = !!((vb >> i) & 1), a = Math.floor(i / 3), b3 = i % 3 + n - 11; setf(a, b3, bit); setf(b3, a, bit); } }
+      /* place data */
+      var bi = 0, up = true;
+      for (c = n - 1; c > 0; c -= 2) {
+        if (c === 6) c--;
+        for (var k = 0; k < n; k++) {
+          r = up ? n - 1 - k : k;
+          for (var d2 = 0; d2 < 2; d2++) { var cc = c - d2; if (F[r][cc]) continue; var byte = out[bi >> 3], bit2 = byte === undefined ? 0 : (byte >> (7 - (bi & 7))) & 1; M[r][cc] = !!bit2; bi++; }
+        }
+        up = !up;
+      }
+      var MASKS = [function (r, c) { return (r + c) % 2 === 0; }, function (r) { return r % 2 === 0; }, function (r, c) { return c % 3 === 0; }, function (r, c) { return (r + c) % 3 === 0; },
+        function (r, c) { return (Math.floor(r / 2) + Math.floor(c / 3)) % 2 === 0; }, function (r, c) { return (r * c) % 2 + (r * c) % 3 === 0; },
+        function (r, c) { return ((r * c) % 2 + (r * c) % 3) % 2 === 0; }, function (r, c) { return ((r + c) % 2 + (r * c) % 3) % 2 === 0; }];
+      function build(mask) {
+        var G = M.map(function (row, rr) { return row.map(function (val, cc) { return !F[rr][cc] && MASKS[mask](rr, cc) ? !val : val; }); });
+        var fb = formatBits(mask), k;
+        function gb(i) { return !!((fb >> i) & 1); }
+        for (k = 0; k <= 5; k++) G[k][8] = gb(k);
+        G[7][8] = gb(6); G[8][8] = gb(7); G[8][7] = gb(8);
+        for (k = 9; k < 15; k++) G[8][14 - k] = gb(k);
+        for (k = 0; k < 8; k++) G[8][n - 1 - k] = gb(k);
+        for (k = 8; k < 15; k++) G[n - 15 + k][8] = gb(k);
+        G[n - 8][8] = true;
+        return G;
+      }
+      function penalty(G) {
+        var p = 0, a, b2, run, dark = 0;
+        for (a = 0; a < n; a++) { for (var dir = 0; dir < 2; dir++) { run = 1; for (b2 = 1; b2 < n; b2++) { var cur = dir ? G[b2][a] : G[a][b2], prev = dir ? G[b2 - 1][a] : G[a][b2 - 1]; if (cur === prev) { run++; if (run === 5) p += 3; else if (run > 5) p++; } else run = 1; } } }
+        for (a = 0; a < n - 1; a++) for (b2 = 0; b2 < n - 1; b2++) if (G[a][b2] === G[a + 1][b2] && G[a][b2] === G[a][b2 + 1] && G[a][b2] === G[a + 1][b2 + 1]) p += 3;
+        for (a = 0; a < n; a++) for (b2 = 0; b2 < n; b2++) if (G[a][b2]) dark++;
+        p += Math.floor(Math.abs(dark * 20 - n * n * 10) / (n * n)) * 10;
+        return p;
+      }
+      var best = null, bp = 1e9;
+      for (var mk = 0; mk < 8; mk++) { var G = build(mk), pp = penalty(G); if (pp < bp) { bp = pp; best = G; } }
+      return best;
+    }
+    return { encode: encode };
+  })();
+
+
+  /* ---------- web build: everything stays on this device, encrypted with a password ---------- */
+  var ENC_KEY = 'petition-enc-v1', ITER = 250000, encKey = null, encSalt = null, encTimer = null, encChain = Promise.resolve();
+  function b64e(u) { var s = '', i; for (i = 0; i < u.length; i += 8192) s += String.fromCharCode.apply(null, u.subarray(i, i + 8192)); return btoa(s); }
+  function b64d(s) { var b = atob(s), u = new Uint8Array(b.length), i; for (i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u; }
+  async function deriveKey(pw, salt, it) {
+    var km = await crypto.subtle.importKey('raw', new TextEncoder().encode(pw), 'PBKDF2', false, ['deriveKey']);
+    return crypto.subtle.deriveKey({ name: 'PBKDF2', salt: salt, iterations: it || ITER, hash: 'SHA-256' }, km, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+  }
+  async function encWith(key, salt, text) {
+    var iv = crypto.getRandomValues(new Uint8Array(12));
+    var ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv }, key, new TextEncoder().encode(text));
+    return { app: 'petition-enc', v: 1, it: ITER, salt: b64e(salt), iv: b64e(iv), ct: b64e(new Uint8Array(ct)) };
+  }
+  async function decWith(blob, pw) {
+    var salt = b64d(blob.salt), key = await deriveKey(pw, salt, blob.it);
+    var pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64d(blob.iv) }, key, b64d(blob.ct));
+    return { text: new TextDecoder().decode(pt), key: key, salt: salt };
+  }
+  function dataText(extra) { var o = { records: records, employees: employees, settings: settings, stamp: stamp, sig: sigImg }; if (extra) for (var k in extra) o[k] = extra[k]; return JSON.stringify(o); }
+  function webPersist() { if (!encKey) return; clearTimeout(encTimer); encTimer = setTimeout(webFlush, 200); }
+  function webFlush() {
+    clearTimeout(encTimer); encTimer = null;
+    if (!encKey) return Promise.resolve();
+    var text = dataText();
+    encChain = encChain.then(async function () {
+      try { var blob = await encWith(encKey, encSalt, text); localStorage.setItem(ENC_KEY, JSON.stringify(blob)); }
+      catch (e) { toast('نەشیا د ڤی وێبگەری دا پاشەکەفت بکەت'); }
+    });
+    return encChain;
+  }
+  function loadFromRaw(raw) {
+    records = (raw.records || []).map(normRec); employees = raw.employees || []; settings = normSettings(raw.settings); stamp = raw.stamp || null; sigImg = raw.sig || null; pend = {};
+    sortRecords(); sortEmps();
+  }
+  var webDl = { save: async function (o) {
+    var n = o.filename || 'file', type = /\.pdf$/i.test(n) ? 'application/pdf' : /\.csv$/i.test(n) ? 'text/csv;charset=utf-8' : 'application/octet-stream';
+    var url = URL.createObjectURL(new Blob([o.data], { type: type })), a = document.createElement('a');
+    a.href = url; a.download = n; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
+  } };
+  function lastBackup() { try { return localStorage.getItem('petition-lastbackup') || ''; } catch (e) { return ''; } }
+  function markBackup() { try { localStorage.setItem('petition-lastbackup', new Date().toISOString()); } catch (e) { } }
+  function unbacked() { var lb = lastBackup(); return records.filter(function (r) { return !lb || String(r.createdAt) > lb; }).length; }
+  async function exportEnc() {
+    if (!encKey) return;
+    var blob = await encWith(encKey, encSalt, dataText({ app: 'petition', v: 9, exportedAt: new Date().toISOString() }));
+    await saveFile('petition-backup-' + dkey(today()) + '.enc', JSON.stringify(blob));
+    markBackup();
+  }
+  async function readEnc(file, pw) {
+    var txt = await file.text(), blob; try { blob = JSON.parse(txt); } catch (e) { blob = null; }
+    if (!blob || blob.app !== 'petition-enc') throw new Error('format');
+    return decWith(blob, pw);
+  }
+  function unlockFlow(done) {
+    var raw = null; try { raw = JSON.parse(localStorage.getItem(ENC_KEY) || 'null'); } catch (e) { }
+    var V = clear($('#v-main')); $('#btn-more').hidden = true;
+    var has = !!(raw && raw.ct), busy2 = false;
+    var pw = h('input', { class: 'in', id: 'lk-pw', type: 'password', autocomplete: has ? 'current-password' : 'new-password', placeholder: 'پاسۆۆرد' });
+    var pw2 = h('input', { class: 'in', id: 'lk-pw2', type: 'password', autocomplete: 'new-password', placeholder: 'پاسۆۆرد دووبارە بنڤیسە' });
+    var rf = h('input', { type: 'file', id: 'lk-file', class: 'in', accept: '.enc,application/octet-stream' });
+    function open_(r) { encKey = r.key; encSalt = r.salt; $('#btn-more').hidden = false; webFlush().then(function () { done(); }); }
+    async function go() {
+      if (busy2) return; var p = pw.value;
+      if (!has && (p.length < 8 || p !== pw2.value)) { toast(p.length < 8 ? 'پاسۆۆرد دڤێت ٨ پیتان کێمتر نەبیت' : 'هەردوو پاسۆۆرد وەک ئێک نینن'); return; }
+      busy2 = true; goBtn.disabled = true;
+      try {
+        if (has) { var r = await decWith(raw, p); loadFromRaw(JSON.parse(r.text)); open_(r); }
+        else {
+          loadLocal(); var salt = crypto.getRandomValues(new Uint8Array(16)), key = await deriveKey(p, salt);
+          try { localStorage.removeItem('petition-v2'); } catch (e) { }
+          open_({ key: key, salt: salt });
+        }
+      } catch (e) { toast(has ? 'پاسۆۆرد یا خەلەتە' : 'نەشیا دروست بکەت'); busy2 = false; goBtn.disabled = false; }
+    }
+    var goBtn = h('button', { class: 'btn primary big', id: 'lk-go', type: 'button', text: has ? 'ڤەکرن' : 'دروستکرن', onclick: go });
+    pw.addEventListener('keydown', function (e) { if (e.key === 'Enter' && has) go(); });
+    var restore = h('details', { class: 'dd' }, h('summary', { text: 'ڤەگەڕاندن ژ کۆپییەکا پاراستنێ (.enc)' }),
+      h('p', { class: 'hint', text: 'فایلی هەلبژێرە و پاسۆۆردا وێ ل سەرێ بنڤیسە.' }), rf,
+      h('button', { class: 'btn small', id: 'lk-restore', type: 'button', style: 'margin-top:8px', text: 'ڤەگەڕاندن', onclick: async function () {
+        var p = pw.value; if (!rf.files || !rf.files[0] || !p) { toast('فایل و پاسۆۆردی بنڤیسە'); return; }
+        try { var r = await readEnc(rf.files[0], p); loadFromRaw(JSON.parse(r.text)); open_(r); } catch (e) { toast('پاسۆۆرد یان فایل یێ خەلەتە'); }
+      } }));
+    V.append(h('div', { class: 'card' }, h('h2', { text: has ? 'پاسۆۆردی بنڤیسە' : 'پاسۆۆردەکێ دروست بکە' }),
+      h('p', { class: 'hint', text: has ? 'عەریزێن تە د ڤی ئامیری دا ب پاسۆۆردی هاتینە قفلکرن.' : 'هەمی عەریز و کارمەند ل سەر ڤی ئامیری دهێنە پاشەکەفتکرن و ب ڤی پاسۆۆردی دهێنە قفلکرن. ئەگەر تو ژبیر بکەی چ ڕێک بو ڤەگەڕاندنێ نینە.' }),
+      pw, has ? null : h('div', { style: 'margin-top:8px' }, pw2), h('div', { style: 'margin-top:10px' }, goBtn)), restore);
+    setTimeout(function () { pw.focus(); }, 50);
+  }
+  /* change the password: re-encrypts everything under a new key */
+  async function changePassword(oldp, newp) {
+    var raw = JSON.parse(localStorage.getItem(ENC_KEY) || 'null');
+    try { await decWith(raw, oldp); } catch (e) { toast('پاسۆۆردا کەڤن یا خەلەتە'); return false; }
+    var salt = crypto.getRandomValues(new Uint8Array(16)); encKey = await deriveKey(newp, salt); encSalt = salt; await webFlush(); toast('پاسۆۆرد هاتە گوهۆڕین. کۆپییێن کەڤن هێشتا ب پاسۆۆردا کەڤن دهێنە کرن'); return true;
+  }
+  var shareFile = null;
+  async function prepShare(rec) {
+    shareFile = null;
+    if (!(WEB && navigator.canShare && navigator.share && window.File)) return;
+    try {
+      var res = await renderSheet(rec), buf = pdfOf([res], fileSafe(rec.name) + ' ' + dkey(rec.leave), payloadOf(rec)), f = new File([buf], recFileName(rec), { type: 'application/pdf' });
+      if (navigator.canShare({ files: [f] })) { shareFile = f; var b = $('#btn-share'); if (b) b.disabled = false; }
+    } catch (e) { }
+  }
+
+
+  /* ---------- small UI helpers ---------- */
+  var toastTimer = null;
+  function toast(msg) { var t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(function () { t.hidden = true; }, 4500); }
+  function fld(label, id, control, hint) { return h('div', { class: 'fld' }, h('label', { for: id, text: label }), control, hint ? h('small', { class: 'hint', text: hint }) : null); }
+  function btn(text, cls, fn, id) { return h('button', { type: 'button', class: 'btn small ' + (cls || ''), id: id, onclick: fn, text: text }); }
+  function alertBox(msg, bad) { return h('div', { class: 'alert' + (bad ? ' bad' : ''), text: msg }); }
+  function openModal(node) { var m = $('#modal'); clear(m); m.append(node); m.hidden = false; }
+  function closeModal() { var m = $('#modal'); m.hidden = true; clear(m); }
+  function openViewer(cv) { $('#viewer-img').src = cv.toDataURL('image/jpeg', 0.95); $('#viewer').hidden = false; $('#viewer-close').focus(); }
+  function closeViewer() { $('#viewer').hidden = true; }
+  function showText(name, data) {
+    var ta = h('textarea', { class: 'in', rows: 10, readonly: true, dir: 'ltr' }); ta.value = data;
+    openModal(h('div', { class: 'mcard' }, h('h2', { text: name }), h('p', { class: 'hint', text: 'ل ڤێرە فایل ڕاستەوخۆ نەهاتە پاشەکەفتکرن. ناڤەڕۆکی کۆپی بکە.' }), ta, h('div', { class: 'row', style: 'margin-top:8px' }, btn('داخستن', '', closeModal))));
+  }
+  async function saveFile(name, data) {
+    if (!dl) { showText(name, data); return; }
+    try { await dl.save({ filename: name, data: data }); toast('فایل هاتە پاشەکەفتکرن'); }
+    catch (e) { if (e && e.code === 'declined') toast('پاشەکەفتکرن هاتە هەلوەشاندن'); else showText(name, data); }
+  }
+  function fileSafe(s) { return trimName(s).replace(/[\\\/:*?"<>|]+/g, ' ').slice(0, 60) || 'employee'; }
+  function dateInput(id, val, onch) {
+    var i = h('input', { class: 'in', type: 'date', id: id, min: '2000-01-01', max: '2100-12-31' }); i.value = dkey(val);
+    i.addEventListener('change', function () { var p = parseKey(i.value); if (p) onch(p); });
+    return i;
+  }
+  function allNames() {
+    var seen = {}, out = [];
+    employees.map(function (e) { return e.name; }).concat(records.map(function (r) { return r.name; })).forEach(function (n) { n = trimName(n); if (n && !seen[n]) { seen[n] = 1; out.push(n); } });
+    return out.sort(function (a, b) { return a.localeCompare(b, 'ar'); });
+  }
+  function recById(id) { for (var i = 0; i < records.length; i++) if (records[i].id === id) return records[i]; return null; }
+  function empOf(r) { return (r.empId && findEmp(r.empId)) || findEmpByName(r.name); }
+  function sigFor(r) { var e = empOf(r); return (e && e.sig) || sigImg || null; }
+
+
+  /* ---------- QR: scanning it with the phone camera opens this petition's page ---------- */
+  var APP_URL = 'https://claude.ai/artifact/MKQrG2D9Kuc3GEYLzrtPKs';
+  function qrCode(rec) {
+    var s = [rec.serial.y, rec.serial.n, rec.type, dkey(rec.leave), rec.type === 'hourly' ? rec.hours : rec.days, dkey(rec.write)].join('|'), hh = 2166136261, i;
+    for (i = 0; i < s.length; i++) { hh ^= s.charCodeAt(i); hh = Math.imul(hh, 16777619) >>> 0; }
+    return ('0000' + (hh & 0xFFFF).toString(16)).slice(-4);
+  }
+  function qrUrl(rec) { return APP_URL + '#p-' + rec.serial.y + '-' + pad4(rec.serial.n) + '-' + qrCode(rec); }
+  function qrFor(rec) { if (!settings.showQr || !rec || !rec.serial) return null; try { return QR.encode(qrUrl(rec)); } catch (e) { return null; } }
+  function parseScan() { var m = /^#?p-(\d{4})-(\d{4})-([0-9a-f]{4})$/.exec(location.hash || ''); return m ? { y: +m[1], n: +m[2], code: m[3] } : null; }
+  var scan = null, scanLoading = false;
+  function clearScan() { scan = null; try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { } }
+  function findBySerial(sc) { for (var i = 0; i < records.length; i++) { var r = records[i]; if (r.serial && r.serial.y === sc.y && r.serial.n === sc.n) return r; } return null; }
+  function startNewFor(r) {
+    var e = empOf(r); F = newForm(F);
+    if (e) pickEmp(e.name); else { F.name = r.name; F.title = r.title; F.dept = r.dept; F.place = r.place; }
+    clearScan(); step = 2; buildMain(); window.scrollTo(0, 0);
+  }
+  function startCopyFor(r) {
+    var e = empOf(r), t = today(), g = 0;
+    F = newForm(F);
+    if (e) pickEmp(e.name); else { F.name = r.name; F.title = r.title; F.dept = r.dept; F.place = r.place; }
+    while (isOff(t) && g++ < 14) t = addD(t, 1);
+    F.type = r.type; F.hours = r.hours || 1; F.from = t; F.to = r.type === 'hourly' ? t : endOf(t, Math.max(1, r.days || 1));
+    clearScan(); lastDone = null; setView('main'); step = 3; buildMain(); window.scrollTo(0, 0);
+  }
+  function buildScan(V) {
+    var r = findBySerial(scan), card = h('div', { class: 'card', id: 'scan' }, h('h2', {}, T('عەریزا '), ltr(serialText({ y: scan.y, n: scan.n }))));
+    function home() { clearScan(); step = 1; buildMain(); window.scrollTo(0, 0); }
+    if (!r) {
+      if (scanLoading) card.append(h('p', { class: 'hint', text: 'دهێتە ڤەکرن…' }));
+      else card.append(alertBox('ئەڤ عەریزە د ئەرشیڤا تە دا نەهاتە دیتن.', true), h('p', { class: 'hint', text: 'ئەگەر تە بەرێ نوکە ژ هەژمارەکا دی چێکریبیت، ئەڤ لینکە ل ڤێرە ناکار دکەت.' }),
+        h('div', { class: 'row' }, btn('دووبارە هەول بدە', '', function () { buildMain(); }, 'sc-retry')));
+      card.append(h('div', { class: 'row', style: 'margin-top:8px' }, btn('دەستپێک', 'primary', home, 'sc-home')));
+      V.append(card); return;
+    }
+    var rg = rangeOf(r), t = today(), hourly = r.type === 'hourly', needNew = false, verdict, cls;
+    if (r.status === 'rejected') { verdict = 'ئەڤ عەریزە یا ڕەتکریە'; cls = 'bad'; needNew = true; }
+    else if (cmpD(t, rg.a) < 0) { verdict = 'مۆلەت هێشتا دەست پێ نەکریە'; cls = ''; }
+    else if (cmpD(t, rg.b) <= 0) { verdict = 'مۆلەت یا چالاکە'; cls = 'ok'; }
+    else { verdict = 'مۆلەت ب دوماهی هات. پێدڤی ب عەریزەیەکا نوی یە'; cls = 'bad'; needNew = true; }
+    if (qrCode(r) !== scan.code) card.append(alertBox('ڕەمزا پشتڕاستکرنێ ناگونجیت. ڕەنگە ئەڤ کاغەزە هاتبیتە گوهۆڕین.', true));
+    card.append(h('div', { class: 'alert ' + cls, id: 'sc-verdict', text: verdict }));
+    var e = empOf(r), ent = entOf(r.name), used = usedDays(r.name, r.leave.y, null);
+    card.append(h('div', { class: 'info' },
+      h('div', {}, h('b', { text: r.name }), T(' · ' + typeOf(r.type).name)),
+      h('div', {}, ltr(hourly ? fmtD(r.leave) : fmtD(rg.a) + ' → ' + fmtD(rg.b)), T(' · ' + (hourly ? ar(r.hours) + ' سەعەت' : ar(r.days) + ' روژ'))),
+      !hourly ? h('div', { class: 'hint' }, T('ڤەگەڕ بو کاری: '), ltr(fmtD(retAfter(rg.b)))) : null,
+      h('div', { class: 'hint' }, T('هاتیە نڤیسین: '), ltr(fmtD(r.write))),
+      h('div', { class: 'hint' }, T('ڕەسید: ' + ar(ent) + ' · بکارهاتی ' + ar(r.leave.y) + ': ' + ar(used) + ' · مای: '), h('b', { class: ent - used < 0 ? 'neg' : '', text: ar(ent - used) }))));
+    var st = h('select', { class: 'in', id: 'sc-status', 'aria-label': 'دۆخ' }, STATUS_KEYS.map(function (k) { return h('option', { value: k, text: STATUS[k] }); })); st.value = r.status;
+    st.addEventListener('change', function () { r.status = st.value; r.updatedAt = new Date().toISOString(); saveRec(r); buildMain(); toast('دۆخ هاتە گوهۆڕین'); });
+    card.append(fld('دۆخ', 'sc-status', st));
+    var row = h('div', { class: 'row' });
+    if (r.status !== 'approved' && r.status !== 'rejected') row.append(btn('پەسەندکرن', '', function () { r.status = 'approved'; r.updatedAt = new Date().toISOString(); saveRec(r); buildMain(); toast('عەریزە هاتە پەسەندکرن'); }, 'sc-approve'));
+    row.append(btn('PDF', '', async function () { try { var o = await deliver(r); if (o === 'saved') toast('فایل هاتە پاشەکەفتکرن'); } catch (er) { toast('نەشیا فایل دروست بکەت'); } }, 'sc-pdf'));
+    card.append(row);
+    card.append(h('button', { class: 'btn big primary', id: 'sc-copy', type: 'button', style: 'margin-top:10px', text: 'کۆپیکرنا ڤێ عەریزێ بو عەریزەیەکا نوی', onclick: function () { startCopyFor(r); } }));
+    card.append(h('button', { class: 'btn big', id: 'sc-new', type: 'button', style: 'margin-top:8px', text: 'عەریزەیەکا نوی بو ڤی کارمەندی', onclick: function () { startNewFor(r); } }));
+    card.append(h('div', { class: 'row', style: 'margin-top:8px' }, btn('دەستپێک', '', home, 'sc-home')));
+    V.append(card);
+  }
+
+  /* ---------- the sheet ---------- */
+  async function renderSheet(st) {
+    await waitFonts('داخازێ ڕێڤەبەرێ مۆلەت ٠١٢٣٤٥٦٧٨٩ ' + st.place + st.title + st.name + st.dept);
+    var sigSrc = st.useSig ? sigFor(st) : null, stSrc = st.useStamp ? stamp : null;
+    var imgs = await Promise.all([loadImg(sigSrc), loadImg(stSrc)]);
+    var S = 2, cv = document.createElement('canvas');
+    cv.width = 794 * S; cv.height = 1123 * S;
+    var cx = cv.getContext('2d'); cx.scale(S, S);
+    var txt = [];
+    drawPetition(cx, st, { family: FAMILY, L: curL(st.type), WEEK: WEEK, ar: ar, pad2: pad2, sigImg: imgs[0], stampImg: imgs[1],
+      serial: settings.showSerial ? serialText(st.serial) : '', qr: qrFor(st), txt: function (t, x, y, w) { txt.push({ t: t, x: x, y: y, w: w }); } });
+    if (!hasInk(cv)) throw new Error('empty-canvas');
+    return { cv: cv, txt: txt };
+  }
+  /* the petition's own data travels inside the PDF, so the same file can be filed again on any device */
+  function payloadOf(rec) {
+    var o = { app: 'petition', v: 2, rec: rec };
+    return btoa(unescape(encodeURIComponent(JSON.stringify(o))));
+  }
+  function recFileName(rec) {
+    var ser = rec.serial ? '-' + rec.serial.y + '-' + pad4(rec.serial.n) : '';
+    return fileSafe(rec.name) + ' - ' + dkey(rec.leave) + ser + '.pdf';
+  }
+  async function deliver(rec) {
+    var res = await renderSheet(rec);
+    if (!dl) { openViewer(res.cv); toast('ل ڤێرە فایل ڕاستەوخۆ نەهاتە پاشەکەفتکرن. وێنەی پاشەکەفت بکە یان بەلاڤ بکە و پاشی چاپ بکە'); return 'viewer'; }
+    var buf = pdfOf([res], fileSafe(rec.name) + ' ' + dkey(rec.leave), payloadOf(rec));
+    try { await dl.save({ filename: recFileName(rec), data: buf }); return 'saved'; }
+    catch (e) {
+      if (e && e.code === 'declined') return 'declined';
+      openViewer(res.cv); toast('ل ڤێرە فایل نەهاتە پاشەکەفتکرن. وێنەی پاشەکەفت بکە یان بەلاڤ بکە و پاشی چاپ بکە'); return 'viewer';
+    }
+  }
+
+  /* ---------- employees and records ---------- */
+  function ensureEmployee(d, keep) {
+    var n = trimName(d.name); if (!n) return null;
+    var e = findEmpByName(n), now = new Date().toISOString();
+    if (!e) {
+      e = { id: uid('e_'), name: n, title: d.title || '', dept: d.dept || '', place: d.place || '', entitlement: null, sig: null, createdAt: now };
+      employees.push(e); sortEmps(); saveEmp(e);
+    } else {
+      var ch = false;
+      ['title', 'dept', 'place'].forEach(function (k) {
+        if (!d[k]) return;
+        if (!e[k] || (!keep && e[k] !== d[k])) { e[k] = d[k]; ch = true; }
+      });
+      if (ch) saveEmp(e);
+    }
+    return e;
+  }
+  function peekSerial(y) {
+    var mx = settings.serials[y] || 0;
+    records.forEach(function (r) { if (r.serial && r.serial.y === y && r.serial.n > mx) mx = r.serial.n; });
+    return { y: y, n: mx + 1 };
+  }
+  function nextSerial(y) {
+    var s = peekSerial(y); settings.serials[y] = s.n; saveSettings();
+    return s;
+  }
+  function usedHere(name, st) { return usedDays(name, st.leave.y, null); }
+
+  /* ---------- main screen ---------- */
+  var F = null, ctl = {}, lastDone = null;
+  function newForm(prev) {
+    var t = today();
+    return { emp: '', isNew: false, name: '', title: '', dept: '', place: '', type: prev ? prev.type : 'annual', from: t, to: t, hours: 1 };
+  }
+  function formState() {
+    var hourly = F.type === 'hourly', days = hourly ? 0 : (cmpD(F.to, F.from) < 0 ? 0 : workdays(F.from, F.to));
+    return { type: F.type, days: days, hours: F.hours, leave: F.from, write: today(), weekday: dow(F.from), place: trimName(F.place), title: trimName(F.title), name: trimName(F.name), dept: trimName(F.dept) };
+  }
+  function pickEmp(val) {
+    F.emp = val;
+    if (val === '__new' || !val) { F.isNew = true; F.name = ''; F.title = ''; F.dept = ''; F.place = ''; }
+    else {
+      F.isNew = false;
+      var e = findEmpByName(val);
+      if (e) { F.name = e.name; F.title = e.title || ''; F.dept = e.dept || ''; F.place = e.place || ''; }
+    }
+  }
+  var step = 1;
+  function txtIn(k, id, ph, list) {
+    var i = h('input', { class: 'in', id: id, type: 'text', autocomplete: 'off', maxlength: '80', placeholder: ph, list: list }); i.value = F[k];
+    i.addEventListener('input', function () { F[k] = i.value; i.removeAttribute('aria-invalid'); if (step === 3) syncMain(); });
+    ctl[k] = i; return i;
+  }
+  function backBtn(to) { return h('button', { class: 'btn small', type: 'button', id: 'btn-back', text: '→ ڤەگەڕ', onclick: function () { step = to; buildMain(); window.scrollTo(0, 0); } }); }
+  function buildMain() {
+    if (WEB && !encKey) return;
+    var V = clear($('#v-main'));
+    ctl = {};
+    if (scan) { buildScan(V); return; }
+    if (step === 1) buildStep1(V); else if (step === 2) buildStep2(V); else buildStep3(V);
+    if (step === 1 && lastDone) showDone(lastDone.rec, lastDone.how);
+  }
+  /* step 1: who */
+  function buildStep1(V) {
+    var card = h('div', { class: 'card' }, h('h2', { text: 'ناڤێ کارمەندی هەلبژێرە' }));
+    if (WEB && unbacked() >= 5) card.append(alertBox(ar(unbacked()) + ' عەریزە بێ کۆپییا پاراستنێ نە. ژ «زیاتر» ← «پاراستن» کۆپییەکێ بکە.', false));
+    employees.forEach(function (e) {
+      card.append(h('button', { class: 'ecard', type: 'button', 'data-emp': e.name, onclick: function () { pickEmp(e.name); step = 2; buildMain(); window.scrollTo(0, 0); } },
+        h('div', {}, h('div', { class: 'n', text: e.name }), h('div', { class: 's', text: [e.title, e.dept].filter(Boolean).join(' · ') }))));
+    });
+    var nw = h('div', { id: 'new-emp', hidden: employees.length > 0 && !F.isNew });
+    nw.append(fld('ناڤێ کارمەندی', 'f-name', (function () { var i = h('input', { class: 'in', id: 'f-name', type: 'text', autocomplete: 'off', maxlength: '80', placeholder: 'ناڤێ کارمەندی' }); i.value = F.name; i.addEventListener('input', function () { F.name = i.value; i.removeAttribute('aria-invalid'); }); ctl.name = i; return i; })()),
+      h('div', { class: 'grid2 stack' }, fld('ناڤنیشان', 'f-title', txtIn('title', 'f-title', 'وەک: کارگێر', 'dl-title')), fld('هوبە', 'f-dept', txtIn('dept', 'f-dept', 'هوبە', 'dl-dept'))),
+      fld('جهێ کاری', 'f-place', txtIn('place', 'f-place', 'جهێ کاری / ئەو جهێ بو دچی', 'dl-place')),
+      h('button', { class: 'btn primary big', id: 'btn-next1', type: 'button', text: 'بەردەوام بە', onclick: function () {
+        var st = formState(), m = firstMissing(st);
+        if (m) { var c = ctl[m]; if (c) { c.setAttribute('aria-invalid', 'true'); c.focus(); } toast('خانا فارغ پڕ بکە ئێکەم'); return; }
+        if (findEmpByName(st.name)) { toast('ئەڤ کارمەندە یێ هەی. ژ لیستێ هەلبژێرە.'); return; }
+        F.isNew = false; step = 2; buildMain(); window.scrollTo(0, 0);
+      } }));
+    if (employees.length) card.append(h('button', { class: 'btn', id: 'btn-newemp', type: 'button', style: 'width:100%;margin-top:4px', text: '+ کارمەندەکێ نوی', hidden: F.isNew, onclick: function () { pickEmp('__new'); nw.hidden = false; this.hidden = true; ctl.name.focus(); } }));
+    card.append(nw);
+    var impIn = h('input', { type: 'file', accept: '.pdf,application/pdf', id: 'imp-pdf', hidden: true });
+    impIn.addEventListener('change', function () { if (impIn.files && impIn.files[0]) importPdf(impIn.files[0]); impIn.value = ''; });
+    var drop = h('div', { class: 'drop', id: 'drop' }, T('PDFـەکا ژ ڤی ئەپی دروستکری ل ڤێرە بهاڤێژە یان '),
+      h('button', { class: 'btn small', id: 'btn-imp', type: 'button', text: 'هەلبژێرە', onclick: function () { impIn.click(); } }), impIn);
+    V.append(card, h('div', { id: 'f-done' }), drop);
+  }
+  /* step 2: which petition */
+  function buildStep2(V) {
+    var st = formState(), e = findEmpByName(st.name), ent = entOf(st.name), used = usedDays(st.name, TODAY.getFullYear(), null);
+    var det = h('details', { class: 'dd', id: 'f-det' }, h('summary', { id: 'f-sum', text: [F.title, F.dept, F.place].filter(Boolean).join(' · ') || 'زانیاری (بگوهۆڕە)' }),
+      h('div', { class: 'grid2 stack' }, fld('ناڤنیشان', 'f-title', txtIn('title', 'f-title', 'ناڤنیشان', 'dl-title')), fld('هوبە', 'f-dept', txtIn('dept', 'f-dept', 'هوبە', 'dl-dept'))),
+      fld('جهێ کاری', 'f-place', txtIn('place', 'f-place', 'جهێ کاری', 'dl-place')));
+    if (!F.title || !F.dept || !F.place) det.open = true;
+    ctl.det = det;
+    var card = h('div', { class: 'card' }, h('div', { class: 'row', style: 'justify-content:space-between' }, backBtn(1)), h('h2', { style: 'margin-top:8px', text: F.name }), det,
+      h('div', { class: 'hint', id: 'f-bal0' }, T('ڕەسید: ' + ar(ent) + ' · بکارهاتی ' + ar(TODAY.getFullYear()) + ': ' + ar(used) + ' · مای: '), h('b', { class: ent - used < 0 ? 'neg' : '', text: ar(ent - used) })),
+      h('h2', { style: 'margin-top:14px', text: 'کیژ عەریزە دڤێ؟' }));
+    ['annual', 'sick', 'hourly'].forEach(function (k) {
+      card.append(h('button', { class: 'btn big', type: 'button', id: 'ty-' + k, style: 'margin-bottom:8px', text: TYPES[k].name, onclick: function () {
+        var m = firstMissing(formState());
+        if (m) { det.open = true; var c = ctl[m]; if (c) { c.setAttribute('aria-invalid', 'true'); c.focus(); } toast('خانا فارغ پڕ بکە ئێکەم'); return; }
+        F.type = k; step = 3; buildMain(); window.scrollTo(0, 0);
+      } }));
+    });
+    V.append(card);
+  }
+  /* step 3: dates for that type */
+  function buildStep3(V) {
+    var go = h('button', { class: 'btn primary big', id: 'btn-pdf', type: 'button', text: 'PDF', onclick: onPdf });
+    ctl.go = go;
+    ctl.dwrap = h('div', { id: 'f-dates' }); ctl.info = h('div', { id: 'f-info' });
+    var seg = h('div', { class: 'seg', role: 'group', 'aria-label': 'جۆرێ مۆلەتێ' });
+    ['annual', 'sick', 'hourly'].forEach(function (k) {
+      seg.append(h('button', { type: 'button', id: 'ty3-' + k, 'aria-pressed': String(F.type === k), text: TYPES[k].name, onclick: function () { if (F.type !== k) { F.type = k; F.to = F.from; buildMain(); } } }));
+    });
+    V.append(h('div', { class: 'card' }, h('div', { class: 'row', style: 'justify-content:space-between' }, backBtn(2)),
+      h('h2', { style: 'margin-top:8px', text: F.name }), seg, ctl.dwrap, ctl.info, go));
+    paintDates(); syncMain();
+  }
+  function paintDates() {
+    var w = clear(ctl.dwrap), hourly = F.type === 'hourly';
+    var fromI = dateInput('f-from', F.from, function (p) {
+      F.from = p; if (hourly || cmpD(F.to, F.from) < 0) { F.to = p; var t = $('#f-to'); if (t) t.value = dkey(p); } syncMain();
+    });
+    if (hourly) {
+      var hi = h('input', { class: 'in', id: 'f-hours', type: 'number', min: '1', max: '12', inputmode: 'numeric' }); hi.value = F.hours;
+      hi.addEventListener('input', function () { var v = Math.round(+hi.value); F.hours = v >= 1 && v <= 12 ? v : 1; syncMain(); });
+      w.append(h('div', { class: 'grid2' }, fld('ڕێکەفت', 'f-from', fromI), fld('ژمارا سەعەتان', 'f-hours', hi)));
+    } else {
+      var toI = dateInput('f-to', F.to, function (p) { F.to = p; syncMain(); });
+      w.append(h('div', { class: 'grid2' }, fld('ژ ڕێکەفتی', 'f-from', fromI), fld('هەتا ڕێکەفتی', 'f-to', toI)));
+    }
+  }
+  function syncMain() {
+    if (!ctl.info) return;
+    var st = formState(), hourly = st.type === 'hourly', box = clear(ctl.info), e = F.isNew ? null : findEmpByName(F.name);
+    var sum = $('#f-sum');
+    if (sum) sum.textContent = [st.title, st.dept, st.place].filter(Boolean).join(' · ') || 'ناڤنیشان · هوبە · جهێ کاری (بگوهۆڕە)';
+    var ser = peekSerial(st.write.y), lines = [];
+    var main = h('div', { class: 'info' });
+    if (hourly) main.append(h('div', {}, T('مۆلەتا کاتی: '), h('b', { text: ar(st.hours) + ' سەعەت' }), T(' · ڕۆژ: '), h('b', { text: WEEK[st.weekday] })));
+    else if (st.days > 0) {
+      var endD = endOf(st.leave, st.days);
+      main.append(h('div', {}, T('ژمارا ڕۆژان: '), h('b', { id: 'f-days', text: ar(st.days) + ' ڕۆژ' }), T(' · دەستپێک: '), h('b', { text: WEEK[st.weekday] })));
+      main.append(h('div', { class: 'hint' }, T('ڤەگەڕ بو کاری: '), ltr(fmtD(retAfter(endD)))));
+    } else main.append(h('div', { class: 'neg', id: 'f-days', text: 'د ڤان ڕێکەفتان دا چ ڕۆژێن کاری نینن.' }));
+    var nm = st.name;
+    if (nm && st.type === 'annual' && st.days > 0) {
+      var ent = entOf(nm), used = usedDays(nm, st.leave.y, null), left = ent - used - st.days;
+      main.append(h('div', { class: 'hint', id: 'f-bal' }, T('ڕەسید: ' + ar(ent) + ' · بکارهاتی: ' + ar(used) + ' · پشتی ڤێ: '), h('b', { class: left < 0 ? 'neg' : '', text: ar(left) })));
+      if (left < 0) main.append(alertBox('ڕەسیدێ مۆلەتێ ناهەیە: ' + ar(-left) + ' ڕۆژ زێدەتر.', false));
+    }
+    if (nm && !hourly && st.days > 0) {
+      var ov = overlaps(nm, { type: st.type, leave: st.leave, days: st.days }, null);
+      if (ov.length) main.append(alertBox('ئەڤ ماوە دگەل مۆلەتەکا بەری نوکە دکەڤیتە ئێک: ' + fmtD(ov[0].a) + ' — ' + fmtD(ov[0].b), false));
+    }
+    main.append(h('div', { class: 'hint' }, T('ئەڤرو: '), ltr(fmtD(st.write)), T(' · ژمارە: '), ltr(serialText(ser))));
+    box.append(main);
+  }
+  function showDone(rec, how) {
+    var box = clear($('#f-done'));
+    var hourly = rec.type === 'hourly';
+    var msg = how === 'declined' ? 'عەریزە هاتە پاشەکەفتکرن، بەلێ فایلی PDF نەهاتە پاشەکەفتکرن.'
+      : how === 'viewer' ? 'عەریزە هاتە پاشەکەفتکرن. کۆپییا چاپکرنێ ڤەبوو.'
+      : how === 'imported' ? 'عەریزە ژ PDFـێ هاتە ئینان و د ئەرشیڤێ دا هاتە دانان.'
+      : 'عەریزە هاتە پاشەکەفتکرن و PDF ئامادەیە.';
+    box.append(h('div', { class: 'done', id: 'done' },
+      h('div', { class: 'sn' }, ltr(serialText(rec.serial))),
+      h('div', { text: msg }),
+      h('div', { class: 'hint' }, T(rec.name + ' · ' + typeOf(rec.type).name + ' · '), ltr(fmtD(rec.leave)), T(' · ' + (hourly ? ar(rec.hours) + ' سەعەت' : ar(rec.days) + ' روژ'))),
+      h('div', { class: 'row', style: 'margin-top:8px' },
+        WEB && navigator.share ? h('button', { class: 'btn small', id: 'btn-share', type: 'button', disabled: true, text: 'بەلاڤکرن', onclick: function () { if (shareFile) navigator.share({ files: [shareFile] }).catch(function () { }); } }) : null,
+        btn('PDF دووبارە', '', async function () {
+          try { var r = await deliver(rec); if (r === 'saved') toast('فایل هاتە پاشەکەفتکرن'); } catch (e) { toast('نەشیا فایل دروست بکەت'); }
+        }, 'btn-again'),
+        btn('عەریزەیەکا نوی', 'primary', function () { lastDone = null; F = newForm(F); step = 1; buildMain(); window.scrollTo(0, 0); }, 'btn-newp'))));
+    prepShare(rec);
+    box.scrollIntoView && box.scrollIntoView({ block: 'nearest' });
+  }
+  function firstMissing(st) {
+    if (!st.name) return 'name';
+    if (!st.title) return 'title'; if (!st.dept) return 'dept'; if (!st.place) return 'place';
+    return null;
+  }
+  async function onPdf() {
+    if (busy || !ready) return;
+    var st = formState(), m = firstMissing(st);
+    if (m) {
+      if (['title', 'dept', 'place'].indexOf(m) >= 0 && ctl.det) ctl.det.open = true;
+      var c = ctl[m]; if (c) { c.setAttribute('aria-invalid', 'true'); c.focus(); }
+      toast(m === 'emp' ? 'کارمەندەکی هەلبژێرە' : 'خانا فارغ پڕ بکە ئێکەم'); return;
+    }
+    if (st.type !== 'hourly' && st.days < 1) { toast('د ڤان ڕێکەفتان دا چ ڕۆژێن کاری نینن'); return; }
+    busy = true; ctl.go.disabled = true; var label = ctl.go.textContent; ctl.go.textContent = 'PDF دهێتە دروستکرن…';
+    var rec = null;
+    try {
+      var e = ensureEmployee(st, false);
+      var now = new Date().toISOString(), hourly = st.type === 'hourly';
+      var ser = nextSerial(st.write.y), w = st.write;
+      rec = normRec({ id: uid('p_'), createdAt: now, updatedAt: now, type: st.type, days: hourly ? 0 : st.days, hours: st.hours,
+        leave: { y: st.leave.y, m: st.leave.m, d: st.leave.d }, write: { y: w.y, m: w.m, d: w.d }, weekday: st.weekday,
+        place: st.place, title: st.title, name: st.name, dept: st.dept, empId: e.id, status: 'draft', serial: ser,
+        useSig: settings.useSig, useStamp: settings.useStamp, sigPos: null, stampPos: null, sigScale: 1, stampScale: 1,
+        extras: (settings.extras || []).map(function (x) { return { id: uid('x_'), d: { y: w.y, m: w.m, d: w.d }, x: x.x, y: x.y, auto: false }; }) });
+      upsert(records, rec); sortRecords();
+      await saveRec(rec);
+      var how = 'saved';
+      try { how = await deliver(rec); } catch (er) { how = 'failed'; toast('عەریزە هاتە پاشەکەفتکرن، بەلێ نەشیا PDF دروست بکەت. ژ ئەرشیڤێ دووبارە هەول بدە.'); }
+      lastDone = { rec: rec, how: how === 'failed' ? 'declined' : how };
+      F = newForm(F); step = 1; buildMain();
+    } catch (er) {
+      toast('نەشیا پاشەکەفت بکەت، دووبارە هەول بدە');
+    } finally { busy = false; if (ctl.go) { ctl.go.disabled = false; ctl.go.textContent = label === 'PDF دهێتە دروستکرن…' ? 'PDF' : label; } }
+  }
+
+  /* ---------- import a PDF made by this app ---------- */
+  function readPayload(buf) {
+    var u = new Uint8Array(buf), s = '', i, CH = 8192;
+    for (i = 0; i < u.length; i += CH) s += String.fromCharCode.apply(null, u.subarray(i, i + CH));
+    var a = s.indexOf('PETDATA1:'); if (a < 0) return null;
+    var b = s.indexOf(':END', a); if (b < 0) return null;
+    try {
+      var bin = atob(s.slice(a + 9, b)), bytes = new Uint8Array(bin.length);
+      for (i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      var o = JSON.parse(new TextDecoder('utf-8').decode(bytes));
+      return o && o.app === 'petition' && o.rec ? o : null;
+    } catch (e) { return null; }
+  }
+  async function importPdf(file) {
+    var buf;
+    try { buf = await file.arrayBuffer(); } catch (e) { toast('ئەڤ فایلە نەهاتە خواندن'); return; }
+    var o = readPayload(buf);
+    if (!o) { toast('د ڤی PDFـی دا داتایێن ئەپی نینن. تنێ PDFـێن ژ ڤی ئەپی دروستکری دهێنە ئینان.'); return; }
+    var r = o.rec;
+    if (!r || !r.leave || !r.write || !trimName(r.name)) { toast('داتایێن ڤی PDFـی نەتەمامن'); return; }
+    var n = normRec(r), ex = n.id ? recById(n.id) : null;
+    if (!ex && n.serial) records.forEach(function (x) { if (x.serial && x.serial.y === n.serial.y && x.serial.n === n.serial.n && trimName(x.name) === trimName(n.name) && same(x.leave, n.leave)) ex = x; });
+    if (ex) { lastDone = { rec: ex, how: 'imported' }; toast('ئەڤ عەریزە بەری نوکە د ئەرشیڤێ دا هەیە'); step = 1; buildMain(); return; }
+    var e = ensureEmployee({ name: n.name, title: n.title, dept: n.dept, place: n.place }, true);
+    n.empId = e ? e.id : null;
+    if (!n.id || recById(n.id)) n.id = uid('p_');
+    if (n.serial) {
+      var taken = records.some(function (x) { return x.serial && x.serial.y === n.serial.y && x.serial.n === n.serial.n; });
+      if (taken) { n.serial = nextSerial(n.write.y); toast('ژمارا ڕیزبەند یا گیرۆدە بوو، ژمارەیەکا نوی هاتە دان'); }
+      else if ((settings.serials[n.serial.y] || 0) < n.serial.n) { settings.serials[n.serial.y] = n.serial.n; saveSettings(); }
+    } else n.serial = nextSerial(n.write.y);
+    upsert(records, n); sortRecords(); await saveRec(n);
+    lastDone = { rec: n, how: 'imported' };
+    step = 1; if (view === 'more') renderMore(); else buildMain();
+    if (view === 'more') { toast('عەریزە هاتە ئینان'); }
+  }
+
+
+  /* ---------- the «زیاتر» area ---------- */
+  var view = 'main', moreTab = 'archive';
+  var MORE = [['archive', 'ئەرشیڤ'], ['report', 'ڕاپۆرت'], ['text', 'دەقێ عەریزێ'], ['settings', 'ڕێکخستن'], ['backup', 'پاراستن']];
+  var arch = { emp: null, y: null, m: 0, q: '' };
+  var rep = { y: null, m: 0 };
+  function setView(v) {
+    view = v;
+    $('#v-main').hidden = v !== 'main'; $('#v-more').hidden = v !== 'more';
+    $('#btn-more').textContent = v === 'more' ? 'ڤەگەڕ' : 'زیاتر';
+    if (v === 'more') renderMore(); else buildMain();
+    window.scrollTo(0, 0);
+  }
+  function renderMore() {
+    var V = clear($('#v-more'));
+    var tabs = h('div', { class: 'tabs', role: 'tablist' });
+    MORE.forEach(function (t) {
+      var b = h('button', { type: 'button', role: 'tab', id: 'mt-' + t[0], 'aria-selected': String(moreTab === t[0]), text: t[1] });
+      b.addEventListener('click', function () { moreTab = t[0]; renderMore(); });
+      tabs.append(b);
+    });
+    var body = h('div', { id: 'more-body' });
+    V.append(tabs, body);
+    if (moreTab === 'archive') renderArchive(body);
+    else if (moreTab === 'report') renderReport(body);
+    else if (moreTab === 'text') renderText(body);
+    else if (moreTab === 'settings') renderSettings(body);
+    else renderBackup(body);
+  }
+  function refreshMore() { if (view === 'more') { var y = window.scrollY; renderMore(); window.scrollTo(0, y); } }
+
+  /* ---------- archive: every employee, then one employee's statement ---------- */
+  function empStats(name) {
+    var yr = TODAY.getFullYear(), ent = entOf(name), used = usedDays(name, yr, null);
+    var cnt = records.filter(function (r) { return trimName(r.name) === trimName(name); }).length;
+    return { yr: yr, ent: ent, used: used, left: ent - used, cnt: cnt };
+  }
+  function renderArchive(V) {
+    if (arch.emp) { renderStatement(V); return; }
+    var q = h('input', { class: 'in', id: 'a-q', type: 'search', placeholder: 'ب ناڤێ کارمەندی یان ژمارەیێ بگەڕە', autocomplete: 'off' }); q.value = arch.q;
+    var list = h('div', { id: 'a-list' });
+    function paint() {
+      clear(list); var s = trimName(arch.q), names = allNames().filter(function (n) { return !s || n.indexOf(s) >= 0; });
+      var hits = s ? records.filter(function (r) { return r.serial && serialText(r.serial).indexOf(ar(s)) >= 0 || (r.serial && (r.serial.y + '/' + pad4(r.serial.n)).indexOf(s) >= 0); }) : [];
+      hits.slice(0, 20).forEach(function (r) { list.append(petitionCard(r, true)); });
+      names.forEach(function (n) {
+        var x = empStats(n);
+        list.append(h('button', { class: 'ecard', type: 'button', 'data-emp': n, onclick: function () { arch.emp = n; arch.y = null; arch.m = 0; renderMore(); } },
+          h('div', {}, h('div', { class: 'n', text: n }), h('div', { class: 's', text: 'عەریزە: ' + ar(x.cnt) + ' · بکارهاتی ' + ar(x.yr) + ': ' + ar(x.used) + ' ژ ' + ar(x.ent) })),
+          h('div', { class: x.left < 0 ? 'neg' : '' }, h('b', { text: ar(x.left) }), h('div', { class: 's', text: 'ڕەسیدێ مای' }))));
+      });
+      if (!names.length && !hits.length) list.append(h('p', { class: 'empty', text: 'هێشتا چ کارمەند یان عەریزە نینن.' }));
+    }
+    q.addEventListener('input', function () { arch.q = q.value; paint(); });
+    V.append(h('div', { class: 'card' }, h('div', { class: 'row', style: 'justify-content:space-between;margin-bottom:8px' }, h('h2', { style: 'margin:0', text: 'کارمەند و عەریزان' }),
+      btn('+ کارمەندەکێ نوی', '', function () { openEmpEditor(null); }, 'a-add')), q), list);
+    paint();
+  }
+  function pickYear(extra) {
+    var ys = {}; ys[TODAY.getFullYear()] = 1; records.forEach(function (r) { if (r.leave) ys[r.leave.y] = 1; });
+    return Object.keys(ys).map(Number).sort(function (a, b) { return b - a; });
+  }
+  function statement(name, yr, mo) {
+    var n = trimName(name), per = { n: 0, annual: 0, sick: 0, hours: 0, rej: 0 }, list = [], months = [], i;
+    for (i = 0; i < 12; i++) months.push({ n: 0, annual: 0, sick: 0, hours: 0 });
+    records.forEach(function (r) {
+      if (trimName(r.name) !== n || !r.leave || r.leave.y !== yr) return;
+      var inMo = !mo || r.leave.m === mo;
+      if (inMo) list.push(r);
+      if (r.status === 'rejected') { if (inMo) per.rej++; return; }
+      var k = r.type === 'hourly' ? 'hours' : r.type === 'sick' ? 'sick' : 'annual', v = k === 'hours' ? (+r.hours || 0) : (+r.days || 0), mm = months[r.leave.m - 1];
+      mm.n++; mm[k] += v;
+      if (inMo) { per.n++; per[k] += v; }
+    });
+    list.sort(byLeave);
+    var ent = entOf(n), used = usedDays(n, yr, null);
+    return { per: per, months: months, list: list, ent: ent, used: used, left: ent - used };
+  }
+  function repTitle(R) { return 'ساڵا ' + ar(R.y) + (R.m ? ' · مەهێ ' + MONTHS[R.m - 1] : ' · هەمی ساڵ'); }
+  function stmtRow(r) {
+    var hr = r.type === 'hourly', e = hr ? r.leave : endOf(r.leave, Math.max(1, r.days));
+    return { serial: r.serial ? serialText(r.serial) : '—', type: typeOf(r.type).name, from: fmtD(r.leave), to: hr ? '—' : fmtD(e), amount: hr ? ar(r.hours) + ' سەعەت' : ar(r.days) + ' روژ', status: STATUS[r.status] };
+  }
+  var armDel = null;
+  function petitionCard(r, showName) {
+    var x = stmtRow(r), st = h('select', { class: 'in', style: 'min-height:36px;width:auto', 'aria-label': 'دۆخ' }, STATUS_KEYS.map(function (k) { return h('option', { value: k, text: STATUS[k] }); }));
+    st.value = r.status;
+    st.addEventListener('change', function () { r.status = st.value; r.updatedAt = new Date().toISOString(); saveRec(r); refreshMore(); toast('دۆخ هاتە گوهۆڕین'); });
+    var del = btn('ژێبرن', 'danger', function () {
+      if (armDel !== r.id) { armDel = r.id; del.textContent = 'دووبارە کلیک بکە بو دلنیابوونێ'; setTimeout(function () { if (armDel === r.id) { armDel = null; del.textContent = 'ژێبرن'; } }, 4000); return; }
+      armDel = null; records = records.filter(function (y) { return y.id !== r.id; });
+      del_(r.id); refreshMore(); toast('عەریزە هاتە ژێبرن (ژمارەیا وێ ناهێتە ڤەگەڕاندن)');
+    });
+    return h('div', { class: 'pcard', 'data-serial': x.serial },
+      h('div', { class: 'row', style: 'justify-content:space-between' }, h('b', {}, ltr(x.serial)), h('span', { text: x.type })),
+      h('div', {}, ltr(x.to === '—' ? x.from : x.from + ' → ' + x.to), h('span', { class: 'hint', text: '  ' + x.amount })),
+      showName ? h('div', { class: 'hint', text: r.name }) : null,
+      h('div', { class: 'row', style: 'margin-top:6px' }, st,
+        btn('کۆپیکرن', '', function () { startCopyFor(r); }),
+        btn('PDF', '', async function () { try { var o = await deliver(r); if (o === 'saved') toast('فایل هاتە پاشەکەفتکرن'); } catch (e) { toast('نەشیا فایل دروست بکەت'); } }), del));
+  }
+  function del_(id) { return del('petitions', id); }
+  function renderStatement(V) {
+    var years = pickYear(); if (arch.y == null || years.indexOf(arch.y) < 0) arch.y = TODAY.getFullYear();
+    var S = statement(arch.emp, arch.y, arch.m), emp = findEmpByName(arch.emp), p = S.per;
+    var ysel = h('select', { class: 'in', id: 's-year' }, years.map(function (y) { return h('option', { value: y, text: ar(y) }); })); ysel.value = String(arch.y);
+    var msel = h('select', { class: 'in', id: 's-month' }, [h('option', { value: 0, text: 'هەمی ساڵ' })].concat(MONTHS.map(function (m, i) { return h('option', { value: i + 1, text: m }); }))); msel.value = String(arch.m);
+    ysel.addEventListener('change', function () { arch.y = +ysel.value; renderMore(); });
+    msel.addEventListener('change', function () { arch.m = +msel.value; renderMore(); });
+    function stat(k, v, neg) { return h('div', { class: 'stat' + (neg ? ' neg' : '') }, h('span', { class: 'k', text: k }), h('span', { class: 'v', text: v })); }
+    V.append(h('div', { class: 'card' },
+      h('div', { class: 'row', style: 'justify-content:space-between' }, btn('→ ئەرشیڤ', '', function () { arch.emp = null; renderMore(); }, 's-back'), emp ? btn('گوهۆڕینا زانیاریان', '', function () { openEmpEditor(emp); }, 's-edit') : null),
+      h('h2', { style: 'margin-top:10px', text: arch.emp }),
+      h('div', { class: 'grid2' }, fld('ساڵ', 's-year', ysel), fld('مەه', 's-month', msel)),
+      h('div', { class: 'stats' }, stat('ژمارا عەریزان', ar(p.n)), stat('ڕۆژێن ئاسایی', ar(p.annual)), stat('ڕۆژێن نەخوەشیێ', ar(p.sick)), stat('سەعەت', ar(p.hours)),
+        stat('ڕەسیدێ ساڵانە', ar(S.ent)), stat('بکارهاتی', ar(S.used)), stat('ڕەسیدێ مایی', ar(S.left), S.left < 0)),
+      p.rej ? h('p', { class: 'hint', text: ar(p.rej) + ' عەریزێن ڕەتکری د ژمارتنێ دا نینن.' }) : null,
+      h('div', { class: 'row' }, h('button', { class: 'btn small primary', id: 's-pdf', type: 'button', text: 'کەشف ب PDF', onclick: statementPdf }), btn('CSV', '', statementCsv, 's-csv'))));
+    if (!arch.m) {
+      var cum = 0, mb = h('tbody');
+      S.months.forEach(function (m, i) {
+        cum += m.annual;
+        mb.append(h('tr', {}, h('td', { text: MONTHS[i] }), h('td', { text: ar(m.n) }), h('td', { text: ar(m.annual) }), h('td', { text: ar(m.sick) }), h('td', { text: ar(m.hours) }), h('td', { class: S.ent - cum < 0 ? 'neg' : '', text: ar(S.ent - cum) })));
+      });
+      V.append(h('div', { class: 'card' }, h('h3', { text: 'ب پێی مەهان' }), h('div', { class: 'scroll' }, h('table', { class: 'tbl', id: 'stmt-months' },
+        h('thead', {}, h('tr', {}, ['مەه', 'عەریزە', 'ئاسایی', 'نەخوەشی', 'سەعەت', 'ڕەسیدێ مایی'].map(function (t) { return h('th', { text: t }); }))), mb))));
+    }
+    var box = h('div', { class: 'card', id: 'stmt-list' }, h('h3', { text: 'ئەرشیڤا عەریزان' }));
+    S.list.forEach(function (r) { box.append(petitionCard(r)); });
+    if (!S.list.length) box.append(h('p', { class: 'empty', text: 'بو ڤی کارمەندی د ڤی ماوەی دا چ عەریزە نینن.' }));
+    V.append(box);
+  }
+  function csvCell(v) { v = String(v == null ? '' : v); return /[",\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }
+  function csvOf(rows) { return '﻿' + rows.map(function (r) { return r.map(csvCell).join(','); }).join('\r\n'); }
+  function detailRows(list) {
+    var out = [['ژمارە', 'ناڤ', 'ناڤنیشان', 'هوبە', 'جۆر', 'دۆخ', 'ژ ڕێکەفتی', 'هەتا ڕێکەفتی', 'ڤەگەڕان بو کاری', 'ڕۆژ', 'سەعەت', 'ڕێکەفتا نڤیسینێ', 'جهێ کاری']];
+    list.forEach(function (r) {
+      var hourly = r.type === 'hourly', e = hourly ? r.leave : endOf(r.leave, Math.max(1, r.days));
+      out.push([r.serial ? r.serial.y + '/' + pad4(r.serial.n) : '', r.name, r.title, r.dept, typeOf(r.type).name, STATUS[r.status], dkey(r.leave), dkey(e), hourly ? '' : dkey(retAfter(e)), hourly ? 0 : r.days, hourly ? r.hours : 0, dkey(r.write), r.place]);
+    });
+    return out;
+  }
+  function statementCsv() {
+    var S = statement(arch.emp, arch.y, arch.m);
+    saveFile('statement-' + fileSafe(arch.emp) + '-' + arch.y + (arch.m ? '-' + pad2(arch.m) : '') + '.csv', csvOf(detailRows(S.list)));
+  }
+  async function tablePdf(R, fname, title, sample) {
+    try {
+      await waitFonts(sample);
+      var sheets = [];
+      for (var p = 0; p < R.pages; p++) {
+        var cv = document.createElement('canvas'); cv.width = 794 * 2; cv.height = 1123 * 2;
+        var cx = cv.getContext('2d'); cx.scale(2, 2); var txt = [];
+        drawReport(cx, R, p, { family: FAMILY, footer: 'هاتیە دروستکرن ل ' + fmtD(today()), txt: function (s, x, y, w) { txt.push({ t: s, x: x, y: y, w: w }); } });
+        sheets.push({ cv: cv, txt: txt });
+      }
+      var buf = pdfOf(sheets, title);
+      if (!dl) { openViewer(sheets[0].cv); toast('ل ڤێرە فایل ڕاستەوخۆ نەهاتە پاشەکەفتکرن'); return; }
+      await dl.save({ filename: fname, data: buf });
+      toast('فایل هاتە پاشەکەفتکرن');
+    } catch (e) {
+      if (e && e.code === 'declined') toast('پاشەکەفتکرن هاتە هەلوەشاندن');
+      else toast('نەشیا فایلی دروست بکەت، دووبارە هەول بدە');
+    }
+  }
+  async function statementPdf() {
+    var S = statement(arch.emp, arch.y, arch.m);
+    if (!S.list.length) { toast('بو ڤی ماوەی چ عەریزە نینن'); return; }
+    var data = S.list.map(function (r, i) { var x = stmtRow(r); return [ar(i + 1), x.serial, x.type, x.from, x.to, x.amount, x.status]; });
+    var p = S.per, per = 21, R0 = { y: arch.y, m: arch.m };
+    var R = { title: 'کەشفا مۆلەتێن کارمەندی', subtitle: arch.emp + ' · ' + repTitle(R0),
+      sub2: 'عەریزە: ' + ar(p.n) + ' · ئاسایی: ' + ar(p.annual) + ' ڕۆژ · نەخوەشی: ' + ar(p.sick) + ' ڕۆژ · بکارهاتی: ' + ar(S.used) + ' ژ ' + ar(S.ent) + ' · مای: ' + ar(S.left),
+      perPage: per, pages: Math.max(1, Math.ceil(data.length / per)),
+      cols: [{ w: 5, num: true }, { w: 15, num: true }, { w: 20 }, { w: 16, num: true }, { w: 16, num: true }, { w: 14 }, { w: 15 }],
+      head: ['#', 'ژمارە', 'جۆر', 'ژ ڕێکەفتی', 'هەتا', 'ماوە', 'دۆخ'], rows: data, total: null };
+    await tablePdf(R, 'statement - ' + fileSafe(arch.emp) + ' - ' + arch.y + (arch.m ? '-' + pad2(arch.m) : '') + '.pdf', 'کەشفا ' + arch.emp + ' ' + repTitle(R0),
+      'کەشفا مۆلەتێن کارمەندی ٠١٢٣٤٥٦٧٨٩ ' + arch.emp + ' ' + data.map(function (r) { return r.join(' '); }).join(' '));
+  }
+
+  /* employee editor (with his own signature if he has one) */
+  function openEmpEditor(e) {
+    var ed = !!e;
+    function inp(id, label, val, type) { var i = h('input', { class: 'in', id: id, type: type || 'text', autocomplete: 'off', maxlength: '80' }); i.value = val == null ? '' : val; return fld(label, id, i); }
+    var card = h('div', { class: 'mcard' }, h('h2', { text: ed ? 'گوهۆڕینا زانیاریێن کارمەندی' : 'کارمەندەکێ نوی' }),
+      inp('st-name', 'ناڤ', ed ? e.name : ''), inp('st-title', 'ناڤنیشان', ed ? e.title : ''), inp('st-dept', 'هوبە', ed ? e.dept : ''), inp('st-place', 'جهێ کاری', ed ? e.place : ''),
+      inp('st-ent', 'ڕەسیدێ ساڵانە (ڕۆژ) — فارغ = ' + ar(settings.entitlement), ed && typeof e.entitlement === 'number' ? e.entitlement : '', 'number'),
+      h('div', { class: 'row' },
+        h('button', { class: 'btn primary', id: 'st-save', type: 'button', text: 'پاشەکەفتکرن', onclick: function () {
+          var name = trimName($('#st-name').value);
+          if (!name) { toast('ناڤێ کارمەندی بنڤیسە'); return; }
+          var dup = findEmpByName(name); if (dup && (!ed || dup.id !== e.id)) { toast('ئەڤ ناڤە یێ هەی'); return; }
+          var entV = $('#st-ent').value === '' ? null : clamp(+$('#st-ent').value, 0, 366);
+          var o = e || { id: uid('e_'), sig: null, createdAt: new Date().toISOString() }, oldName = ed ? e.name : null;
+          o.name = name; o.title = $('#st-title').value.trim(); o.dept = $('#st-dept').value.trim(); o.place = $('#st-place').value.trim(); o.entitlement = entV;
+          if (!ed) employees.push(o);
+          if (ed && trimName(oldName) !== name) records.forEach(function (r) { if (trimName(r.name) === trimName(oldName)) { r.name = name; saveRec(r); } });
+          sortEmps(); saveEmp(o); if (arch.emp && ed) arch.emp = name; closeModal(); refreshMore(); toast('کارمەند هاتە پاشەکەفتکرن');
+        } }),
+        ed ? btn(e.sig ? 'واژۆیا تایبەت: نوی بکە' : 'واژۆیا تایبەت بو ڤی کارمەندی', '', function () { closeModal(); openSigPad(function (url) { e.sig = url; saveEmp(e); refreshMore(); }, e.name, e.sig); }, 'st-sig') : null,
+        btn('هەلوەشاندن', '', closeModal)));
+    openModal(card);
+  }
+
+  /* signature pad */
+  function openSigPad(onSave, who, hasOld, onRemove) {
+    var cv = h('canvas', { class: 'pad', width: 800, height: 320, 'aria-label': 'جهێ کێشانا واژۆیێ' });
+    var ctx = cv.getContext('2d'); ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.lineWidth = 4; ctx.strokeStyle = '#141414'; ctx.fillStyle = '#141414';
+    var drawing = false, last = null, dirty = false;
+    function pt(ev) { var r = cv.getBoundingClientRect(); return { x: (ev.clientX - r.left) * cv.width / r.width, y: (ev.clientY - r.top) * cv.height / r.height }; }
+    cv.addEventListener('pointerdown', function (ev) { ev.preventDefault(); drawing = true; last = pt(ev); dirty = true; try { cv.setPointerCapture(ev.pointerId); } catch (x) { } ctx.beginPath(); ctx.arc(last.x, last.y, 2, 0, 6.3); ctx.fill(); });
+    cv.addEventListener('pointermove', function (ev) { if (!drawing) return; var p = pt(ev); ctx.beginPath(); ctx.moveTo(last.x, last.y); ctx.lineTo(p.x, p.y); ctx.stroke(); last = p; });
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (n) { cv.addEventListener(n, function () { drawing = false; }); });
+    function crop() {
+      var d = ctx.getImageData(0, 0, cv.width, cv.height).data, x0 = cv.width, y0 = cv.height, x1 = -1, y1 = -1, x, y;
+      for (y = 0; y < cv.height; y++) for (x = 0; x < cv.width; x++) if (d[(y * cv.width + x) * 4 + 3] > 10) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+      if (x1 < 0) return null;
+      x0 = Math.max(0, x0 - 8); y0 = Math.max(0, y0 - 8); x1 = Math.min(cv.width - 1, x1 + 8); y1 = Math.min(cv.height - 1, y1 + 8);
+      var bw = x1 - x0 + 1, bh = y1 - y0 + 1, k = Math.min(1, 480 / bw);
+      var o = document.createElement('canvas'); o.width = Math.max(1, Math.round(bw * k)); o.height = Math.max(1, Math.round(bh * k));
+      o.getContext('2d').drawImage(cv, x0, y0, bw, bh, 0, 0, o.width, o.height);
+      return o.toDataURL('image/png');
+    }
+    openModal(h('div', { class: 'mcard' }, h('h2', { text: who ? 'واژۆیا ' + who : 'واژۆ' }),
+      h('p', { class: 'hint', text: 'ب پەنجە یان ماوسی ل ناڤ چارچوڤێ واژۆیا خۆ بکێشە.' }), cv,
+      h('div', { class: 'row', style: 'margin-top:8px' },
+        h('button', { class: 'btn primary', type: 'button', id: 'sig-save', text: 'پاشەکەفتکرن', onclick: function () {
+          var url = dirty ? crop() : null; if (!url) { toast('هێشتا واژۆ نەهاتیە کێشان'); return; }
+          closeModal(); onSave(url); toast('واژۆ هاتە پاشەکەفتکرن');
+        } }),
+        btn('پاک بکە', '', function () { ctx.clearRect(0, 0, cv.width, cv.height); dirty = false; }),
+        hasOld && onRemove ? btn('واژۆیا کەڤن ژێببە', 'danger', function () { closeModal(); onRemove(); toast('واژۆ هاتە ژێبرن'); }) : null,
+        btn('هەلوەشاندن', '', closeModal))));
+  }
+
+  /* ---------- reports ---------- */
+  function repRows() {
+    var yr = rep.y, mo = rep.m, map = {}, order = [];
+    records.forEach(function (r) {
+      if (r.status === 'rejected' || !r.leave || r.leave.y !== yr || (mo && r.leave.m !== mo)) return;
+      var k = trimName(r.name) || '—';
+      if (!map[k]) { map[k] = { name: k, n: 0, annual: 0, sick: 0, hours: 0 }; order.push(k); }
+      var g = map[k]; g.n++;
+      if (r.type === 'hourly') g.hours += (+r.hours || 0); else if (r.type === 'sick') g.sick += (+r.days || 0); else g.annual += (+r.days || 0);
+    });
+    order.sort(function (a, b) { return a.localeCompare(b, 'ar'); });
+    return order.map(function (k) { var g = map[k]; g.left = entOf(g.name) - usedDays(g.name, yr, null); return g; });
+  }
+  function renderReport(V) {
+    var years = pickYear(); if (rep.y == null || years.indexOf(rep.y) < 0) rep.y = TODAY.getFullYear();
+    var ysel = h('select', { class: 'in', id: 'r-year' }, years.map(function (y) { return h('option', { value: y, text: ar(y) }); })); ysel.value = String(rep.y);
+    var msel = h('select', { class: 'in', id: 'r-month' }, [h('option', { value: 0, text: 'هەمی ساڵ' })].concat(MONTHS.map(function (m, i) { return h('option', { value: i + 1, text: m }); }))); msel.value = String(rep.m);
+    ysel.addEventListener('change', function () { rep.y = +ysel.value; renderMore(); });
+    msel.addEventListener('change', function () { rep.m = +msel.value; renderMore(); });
+    var rows = repRows(), tot = rows.reduce(function (a, g) { a.n += g.n; a.annual += g.annual; a.sick += g.sick; a.hours += g.hours; return a; }, { n: 0, annual: 0, sick: 0, hours: 0 });
+    V.append(h('div', { class: 'card' }, h('h2', { text: 'ڕاپۆرتا مۆلەتان' }),
+      h('div', { class: 'grid2' }, fld('ساڵ', 'r-year', ysel), fld('مەه', 'r-month', msel)),
+      h('div', { class: 'row' }, h('button', { class: 'btn small primary', id: 'r-pdf', type: 'button', text: 'PDF', onclick: reportPdf }), btn('CSV', '', reportCsv, 'r-csv')),
+      h('p', { class: 'hint', text: 'عەریزێن ڕەتکری د ژمارتنێ دا نینن.' })));
+    var body = h('tbody');
+    rows.forEach(function (g) {
+      body.append(h('tr', {}, h('td', {}, h('button', { class: 'btn small', type: 'button', text: g.name, onclick: function () { arch.emp = g.name; arch.y = rep.y; arch.m = rep.m; moreTab = 'archive'; renderMore(); } })),
+        h('td', { text: ar(g.n) }), h('td', { text: ar(g.annual) }), h('td', { text: ar(g.sick) }), h('td', { text: ar(g.hours) }), h('td', { class: g.left < 0 ? 'neg' : '', text: ar(g.left) })));
+    });
+    if (!rows.length) body.append(h('tr', {}, h('td', { colspan: 6, class: 'empty', text: 'بو ڤی ماوەی چ عەریزە نینن.' })));
+    else body.append(h('tr', {}, h('td', {}, h('b', { text: 'کۆم' })), h('td', {}, h('b', { text: ar(tot.n) })), h('td', {}, h('b', { text: ar(tot.annual) })), h('td', {}, h('b', { text: ar(tot.sick) })), h('td', {}, h('b', { text: ar(tot.hours) })), h('td')));
+    V.append(h('div', { class: 'card' }, h('h3', { text: repTitle(rep) }), h('div', { class: 'scroll' }, h('table', { class: 'tbl', id: 'rep-table' },
+      h('thead', {}, h('tr', {}, ['کارمەند', 'عەریزە', 'ئاسایی', 'نەخوەشی', 'سەعەت', 'ڕەسید'].map(function (t) { return h('th', { text: t }); }))), body))));
+  }
+  function reportCsv() {
+    var list = records.filter(function (r) { return r.leave && r.leave.y === rep.y && (!rep.m || r.leave.m === rep.m); }).slice().sort(byLeave);
+    saveFile('leave-report-' + rep.y + (rep.m ? '-' + pad2(rep.m) : '') + '.csv', csvOf(detailRows(list)));
+  }
+  async function reportPdf() {
+    var rows = repRows();
+    if (!rows.length) { toast('بو ڤی ماوەی چ عەریزە نینن'); return; }
+    var data = rows.map(function (g, i) { return [ar(i + 1), g.name, ar(g.n), ar(g.annual), ar(g.sick), ar(g.hours), ar(g.left)]; });
+    var t = rows.reduce(function (a, g) { a.n += g.n; a.annual += g.annual; a.sick += g.sick; a.hours += g.hours; return a; }, { n: 0, annual: 0, sick: 0, hours: 0 });
+    var R = { title: 'ڕاپۆرتا مۆلەتان', subtitle: repTitle(rep) + ' · ئاسایی و نەخوەشی ب ڕۆژ', perPage: 24, pages: Math.max(1, Math.ceil(data.length / 24)),
+      cols: [{ w: 5, num: true }, { w: 34 }, { w: 11, num: true }, { w: 12, num: true }, { w: 13, num: true }, { w: 11, num: true }, { w: 13, num: true }],
+      head: ['#', 'کارمەند', 'عەریزە', 'ئاسایی', 'نەخوەشی', 'سەعەت', 'ڕەسید'], rows: data, total: ['', 'کۆم', ar(t.n), ar(t.annual), ar(t.sick), ar(t.hours), ''] };
+    await tablePdf(R, 'leave-report-' + rep.y + (rep.m ? '-' + pad2(rep.m) : '') + '.pdf', 'ڕاپۆرتا مۆلەتان ' + repTitle(rep),
+      'ڕاپۆرتا مۆلەتان ٠١٢٣٤٥٦٧٨٩ ' + rows.map(function (g) { return g.name; }).join(' '));
+  }
+
+
+  /* ---------- fixed wording (editable) ---------- */
+  var txType = 'annual', txArm = null, txTimer = null;
+  var TXF = [
+    { k: 'to', c: 1, label: 'سەرنڤیسا ئێکێ (ل سەرێ عەریزێ)' },
+    { k: 'subj', c: 0, label: 'سەرنڤیسا دووێ (بابەت)' },
+    { k: 'b1', c: 1, label: 'دەستپێکا ڕستەیا سەرەکی (بەرێ ژمارا ڕۆژان)' },
+    { k: 'unit', c: 0, label: 'یەکە (ڕۆژ یان سەعەت)' },
+    { k: 'conn', c: 0, label: 'دەق بەرێ ڕێکەفتێ' },
+    { k: 'b3', c: 1, label: 'دەق بەرێ ناڤێ ڕۆژێ' },
+    { k: 'b4', c: 0, label: 'دەق بەرێ جهێ کاری' },
+    { k: 'b5', c: 1, label: 'دوماهیا ڕستەیێ' },
+    { k: 'closing', c: 1, label: 'ڕستا داخستنێ' },
+    { k: 'signer', c: 1, label: 'ناڤێ واژۆکەری (داخازکەر)' },
+    { k: 'deptLabel', c: 1, label: 'دەق بەرێ ناڤێ هوبێ' }
+  ];
+  function txNorm(v) { return String(v == null ? '' : v).replace(/\s+/g, ' ').trim(); }
+  function txDefault(f, t) { return f.c ? txNorm(L[f.k]) : f.k === 'conn' ? DEF_CONN : txNorm(typeOf(t)[f.k]); }
+  function txGet(f, t) { var src = f.c ? (settings.common || {}) : ((settings.types || {})[t] || {}); return txNorm(src[f.k]) || txDefault(f, t); }
+  function txSet(f, t, val) {
+    val = txNorm(val); var bag;
+    if (f.c) bag = settings.common || (settings.common = {});
+    else { var ty = settings.types || (settings.types = {}); bag = ty[t] || (ty[t] = {}); }
+    if (!val || val === txDefault(f, t)) delete bag[f.k]; else bag[f.k] = val;
+    if (!f.c && !Object.keys(bag).length) delete settings.types[t];
+    commitSettings(); txPreview();
+  }
+  var sTimer = null;
+  function commitSettings() { clearTimeout(sTimer); sTimer = setTimeout(function () { sTimer = null; saveSettings(); }, 500); }
+  function sampleSt(type) {
+    var t = today();
+    return { type: type || 'annual', days: 3, hours: 2, leave: t, write: t, weekday: dow(t), place: 'جهێ کاری', title: 'ناڤنیشان', name: 'ناڤێ کارمەندی', dept: 'هوبە', serial: { y: t.y, n: 1 },
+      useSig: settings.useSig, useStamp: settings.useStamp, sigPos: null, stampPos: null, sigScale: 1, stampScale: 1,
+      extras: (settings.extras || []).map(function (x) { return { d: t, x: x.x, y: x.y }; }) };
+  }
+  async function paintPreview(id, st) {
+    var cv = $('#' + id); if (!cv) return;
+    await waitFonts('داخازێ ڕێڤەبەرێ مۆلەت ٠١٢٣٤٥٦٧٨٩ ' + Object.keys(settings.common || {}).map(function (k) { return settings.common[k]; }).join(' '));
+    var imgs = await Promise.all([loadImg(st.useSig ? sigImg : null), loadImg(st.useStamp ? stamp : null)]);
+    cv = $('#' + id); if (!cv) return;
+    var cx = cv.getContext('2d'); cx.setTransform(1, 0, 0, 1, 0, 0);
+    drawPetition(cx, st, { family: FAMILY, L: curL(st.type), WEEK: WEEK, ar: ar, pad2: pad2, sigImg: imgs[0], stampImg: imgs[1], serial: settings.showSerial ? serialText(st.serial) : '', qr: qrFor(st) });
+  }
+  function txPreview() { return paintPreview('tx-prev', sampleSt(txType)); }
+  function renderText(V) {
+    var tsel = h('select', { class: 'in', id: 'tx-type' }, Object.keys(TYPES).map(function (k) { return h('option', { value: k, text: TYPES[k].name }); })); tsel.value = txType;
+    tsel.addEventListener('change', function () { txType = tsel.value; renderMore(); });
+    var grid = h('div', {});
+    TXF.forEach(function (f) {
+      var i = h('input', { class: 'in', id: 'tx-' + f.k, type: 'text', maxlength: '160', autocomplete: 'off', spellcheck: 'false', dir: 'rtl' }); i.value = txGet(f, txType);
+      i.addEventListener('input', function () { clearTimeout(txTimer); txTimer = setTimeout(function () { txSet(f, txType, i.value); }, 450); });
+      i.addEventListener('change', function () { clearTimeout(txTimer); txSet(f, txType, i.value); i.value = txGet(f, txType); });
+      grid.append(h('div', { class: 'fld' }, h('label', { for: 'tx-' + f.k }, T(f.label + ' '), h('span', { class: 'tag', text: f.c ? '· بو هەمی جۆران' : '· بو ڤی جۆرێ' })), i));
+    });
+    var reset = h('button', { class: 'btn small danger', id: 'tx-reset', type: 'button', text: 'ڤەگەڕاندنا دەقێ ئەسڵی', onclick: function (ev) {
+      var b = ev.currentTarget;
+      if (!txArm) { txArm = setTimeout(function () { txArm = null; b.textContent = 'ڤەگەڕاندنا دەقێ ئەسڵی'; }, 4000); b.textContent = 'دووبارە کلیک بکە بو دلنیابوونێ'; return; }
+      clearTimeout(txArm); txArm = null; settings.common = {}; settings.types = {}; commitSettings(); renderMore(); toast('دەقێ ئەسڵی هاتە ڤەگەڕاندن');
+    } });
+    V.append(h('div', { class: 'card' }, h('h2', { text: 'دەقێ جێگیر یێ عەریزێ' }),
+      h('p', { class: 'hint', text: 'ل ڤێرە دەقێ جێگیر ژ سەرنڤیسێ هەتا داخستنێ دگوهۆڕی. ئەو بەشێن تو پڕ دکەی (ژمارە، ڕێکەفت، ناڤێ ڕۆژێ، جهێ کاری، ناڤ) ل جهێ خۆ دمینن.' }),
+      fld('جۆرێ عەریزێ', 'tx-type', tsel), grid, h('div', { class: 'row' }, reset)),
+      h('div', { class: 'card' }, h('h3', { text: 'پێشبینین' }), h('canvas', { id: 'tx-prev', class: 'prev', width: 794, height: 1123, 'aria-label': 'پێشبینینا عەریزێ' })));
+    txPreview();
+  }
+
+  /* ---------- settings ---------- */
+  function readImageFile(f, maxSide, cb) {
+    var fr = new FileReader();
+    fr.onload = function () {
+      var im = new Image();
+      im.onload = function () {
+        var k = Math.min(1, maxSide / Math.max(im.width, im.height)), c = document.createElement('canvas');
+        c.width = Math.max(1, Math.round(im.width * k)); c.height = Math.max(1, Math.round(im.height * k));
+        c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+        var url = c.toDataURL('image/png');
+        if (url.length > 220000) { var c2 = document.createElement('canvas'); c2.width = c.width; c2.height = c.height; var x2 = c2.getContext('2d'); x2.fillStyle = '#fff'; x2.fillRect(0, 0, c.width, c.height); x2.drawImage(c, 0, 0); url = c2.toDataURL('image/jpeg', 0.85); }
+        cb(url);
+      };
+      im.onerror = function () { toast('ئەڤ وێنە نەهاتە خواندن'); };
+      im.src = fr.result;
+    };
+    fr.onerror = function () { toast('ئەڤ وێنە نەهاتە خواندن'); };
+    fr.readAsDataURL(f);
+  }
+  function renderSettings(V) {
+    var wk = h('select', { class: 'in', id: 'set-weekend' }, [['fri', 'هەینی'], ['frisat', 'هەینی و شەمبی'], ['none', 'چ نینە']].map(function (o) { return h('option', { value: o[0], text: o[1] }); }));
+    wk.value = settings.weekend; wk.addEventListener('change', function () { settings.weekend = wk.value; commitSettings(); });
+    var en = h('input', { class: 'in', id: 'set-ent', type: 'number', min: '0', max: '366' }); en.value = settings.entitlement;
+    en.addEventListener('change', function () { var v = +en.value; if (!(v >= 0 && v <= 366)) { en.value = settings.entitlement; return; } settings.entitlement = v; commitSettings(); });
+    function chk(id, label, key) {
+      var c = h('input', { type: 'checkbox', id: id }); c.checked = !!settings[key];
+      c.addEventListener('change', function () { settings[key] = c.checked; commitSettings(); });
+      return h('label', { class: 'chk' }, c, T(label));
+    }
+    V.append(h('div', { class: 'card' }, h('h2', { text: 'ڕۆژێن کاری و ڕەسید' }),
+      h('div', { class: 'grid2' }, fld('ڕۆژا پشووا هەفتیێ', 'set-weekend', wk), fld('ڕەسیدێ مۆلەتا ساڵانە (ڕۆژ)', 'set-ent', en)),
+      chk('set-serial', 'ژمارا ڕیزبەند ل سەر عەریزێ نیشان بدە', 'showSerial'),
+      chk('set-qr', 'QR ل بن عەریزێ نیشان بدە', 'showQr'),
+      h('p', { class: 'hint', text: 'ڕەسیدێ ساڵانە ب بنەڕەت ٣٠ ڕۆژە. بو هەر کارمەندەکی دشێی ل بەشێ ئەرشیڤێ جودا بگوهۆڕی.' })));
+
+    /* signature + stamp: set once, used on every petition */
+    var file = h('input', { type: 'file', accept: 'image/*', id: 'stamp-file', class: 'in' });
+    file.addEventListener('change', function () { if (file.files && file.files[0]) readImageFile(file.files[0], 360, function (u) { stamp = u; saveStamp(); renderMore(); toast('مۆر هاتە پاشەکەفتکرن'); }); });
+    V.append(h('div', { class: 'card' }, h('h2', { text: 'واژۆ و مۆر (جارەکێ)' }),
+      h('p', { class: 'hint', text: 'جارەکێ دانە و ل سەر هەمی عەریزان دهێنە دانان.' }),
+      sigImg ? h('div', { class: 'stamp-prev' }, h('img', { src: sigImg, alt: 'واژۆ' })) : h('p', { class: 'hint', text: 'هێشتا واژۆ نینە.' }),
+      h('div', { class: 'row', style: 'margin:8px 0' }, h('button', { class: 'btn small primary', id: 'sig-open', type: 'button', text: sigImg ? 'واژۆیا نوی بکێشە' : 'واژۆ بکێشە', onclick: function () {
+        openSigPad(function (u) { sigImg = u; saveSig(); renderMore(); }, '', !!sigImg, function () { sigImg = null; saveSig(); renderMore(); }); } })),
+      chk('set-usesig', 'واژۆ ل سەر عەریزێ بهێتە دانان', 'useSig'),
+      fld('وێنەیێ مۆرێ', 'stamp-file', file, 'باشترە ل سەر پاشخانەکا سپی یان شەفاف بیت.'),
+      stamp ? h('div', { class: 'stamp-prev' }, h('img', { src: stamp, alt: 'مۆر' })) : null,
+      stamp ? h('div', { class: 'row', style: 'margin-top:8px' }, btn('مۆرێ ژێببە', 'danger', function () { stamp = null; saveStamp(); renderMore(); toast('مۆر هاتە ژێبرن'); })) : null,
+      chk('set-usestamp', 'مۆر ل سەر عەریزێ بهێتە دانان', 'useStamp')));
+
+    /* holidays */
+    var hd = today(), hdI = dateInput('hol-date', hd, function (p) { hd = p; });
+    var hn = h('input', { class: 'in', id: 'hol-name', type: 'text', placeholder: 'ناڤێ پشووێ (ب ئارەزوو)', autocomplete: 'off' });
+    var hl = h('ul', { class: 'hol' });
+    settings.holidays.slice().sort(function (a, b) { return a.d < b.d ? -1 : 1; }).forEach(function (x) {
+      var p = parseKey(x.d);
+      hl.append(h('li', {}, h('span', {}, ltr(fmtD(p)), T(x.n ? ' · ' + x.n : '')), h('button', { class: 'btn small danger', type: 'button', 'aria-label': 'ژێبرنا ڕۆژا پشووێ', text: '×', onclick: function () {
+        settings.holidays = settings.holidays.filter(function (y) { return y.d !== x.d; }); commitSettings(); renderMore();
+      } })));
+    });
+    V.append(h('div', { class: 'card' }, h('h2', { text: 'ڕۆژێن پشووێ یێن فەرمی' }),
+      h('div', { class: 'grid2' }, fld('ڕێکەفت', 'hol-date', hdI), fld('ناڤ', 'hol-name', hn)),
+      h('button', { class: 'btn small', id: 'hol-add', type: 'button', text: 'زێدەکرن', onclick: function () {
+        var k = dkey(hd);
+        if (settings.holidays.some(function (x) { return x.d === k; })) { toast('ئەڤ ڕۆژە یا هەی'); return; }
+        settings.holidays.push({ d: k, n: hn.value.trim() }); commitSettings(); renderMore(); toast('ڕۆژا پشووێ هاتە زێدەکرن');
+      } }), hl, h('p', { class: 'hint', text: 'ئەڤ ڕۆژە د ژمارتنا ڕۆژێن کاری دا نابنە ڕۆژا مۆلەتێ.' })));
+
+    /* extra dates printed on the sheet */
+    var xc = h('div', { id: 'x-list' });
+    function paintX() {
+      clear(xc);
+      (settings.extras || []).forEach(function (x, i) {
+        function rng(k, label) {
+          var r = h('input', { type: 'range', min: '2', max: '98', value: String(Math.round(x[k] * 100)), 'aria-label': label });
+          r.addEventListener('input', function () { x[k] = +r.value / 100; commitSettings(); paintPreview('x-prev', sampleSt('annual')); });
+          return fld(label, null, r);
+        }
+        xc.append(h('div', { class: 'pcard' }, h('b', { text: 'ڕێکەفتا زێدە ' + ar(i + 1) }), rng('x', 'ڕاست ← چەپ'), rng('y', 'سەر ← خوار'),
+          btn('ژێبرن', 'danger', function () { settings.extras.splice(i, 1); commitSettings(); renderMore(); })));
+      });
+    }
+    paintX();
+    V.append(h('div', { class: 'card' }, h('h2', { text: 'ڕێکەفتێن زێدە ل سەر عەریزێ' }),
+      h('p', { class: 'hint', text: 'ڕێکەفتا نڤیسینێ (ئەڤرو) دکەڤیتە جهەکێ دی ژی ل سەر عەریزێ. ئەگەر تە دڤێ، زێدە بکە و جهێ وێ ڕێکبخە.' }),
+      xc, (settings.extras || []).length < 3 ? h('button', { class: 'btn small', id: 'x-add', type: 'button', text: '+ ڕێکەفتەکا زێدە', onclick: function () { (settings.extras = settings.extras || []).push({ x: 0.8, y: 0.075 }); commitSettings(); renderMore(); } }) : null,
+      h('canvas', { id: 'x-prev', class: 'prev', width: 794, height: 1123, style: 'margin-top:10px', 'aria-label': 'پێشبینین' })));
+    paintPreview('x-prev', sampleSt('annual'));
+  }
+
+  /* ---------- backup ---------- */
+  function exportJson() {
+    saveFile('petition-backup-' + dkey(today()) + '.json', JSON.stringify({ app: 'petition', v: 9, exportedAt: new Date().toISOString(), records: records, employees: employees, settings: settings, stamp: stamp, sig: sigImg }));
+  }
+  function importObject(o) {
+    if (!o || o.app !== 'petition' || !Array.isArray(o.records)) { toast('ئەڤ فایلە کۆپییەکا پاراستنێ یا دروست نینە'); return; }
+    var nr = 0, ne = 0;
+    o.records.forEach(function (r) {
+      if (!r || typeof r.id !== 'string' || !r.leave || !r.write) return;
+      var ex = recById(r.id);
+      if (!ex || String(r.updatedAt || '') > String(ex.updatedAt || '')) { var n = normRec(r); upsert(records, n); saveRec(n); nr++; }
+    });
+    (o.employees || []).forEach(function (e) {
+      if (!e || typeof e.id !== 'string' || !e.name) return;
+      if (!findEmp(e.id) && !findEmpByName(e.name)) { employees.push(e); saveEmp(e); ne++; }
+    });
+    if (o.settings) {
+      var s = normSettings(o.settings);
+      s.holidays = s.holidays.concat(settings.holidays.filter(function (x) { return !s.holidays.some(function (y) { return y.d === x.d; }); }));
+      Object.keys(settings.serials).forEach(function (y) { s.serials[y] = Math.max(s.serials[y] || 0, settings.serials[y]); });
+      records.forEach(function (r) { if (r.serial && (s.serials[r.serial.y] || 0) < r.serial.n) s.serials[r.serial.y] = r.serial.n; });
+      settings = s; saveSettings();
+    }
+    if (o.stamp && !stamp) { stamp = o.stamp; saveStamp(); }
+    if (o.sig && !sigImg) { sigImg = o.sig; saveSig(); }
+    sortRecords(); sortEmps(); renderMore();
+    toast('هاتە ڤەگەڕاندن: ' + ar(nr) + ' عەریزە و ' + ar(ne) + ' کارمەند');
+  }
+  function importFile(f) {
+    var rd = new FileReader();
+    rd.onload = function () { var o; try { o = JSON.parse(rd.result); } catch (e) { o = null; } importObject(o); };
+    rd.readAsText(f);
+  }
+  function renderBackup(V) {
+    if (WEB) {
+      var ef = h('input', { type: 'file', id: 'imp-enc', class: 'in', accept: '.enc,application/octet-stream' }), ep = h('input', { class: 'in', id: 'imp-enc-pw', type: 'password', placeholder: 'پاسۆۆردا ڤی فایلی', autocomplete: 'off' });
+      var op = h('input', { class: 'in', id: 'pw-old', type: 'password', placeholder: 'پاسۆۆردا نوکە', autocomplete: 'current-password' }), np = h('input', { class: 'in', id: 'pw-new', type: 'password', placeholder: 'پاسۆۆردا نوی (٨ پیت و زێدەتر)', autocomplete: 'new-password' });
+      V.append(h('div', { class: 'card' }, h('h2', { text: 'کۆپییا پاراستنێ ب پاسۆۆرد' }),
+        h('p', { class: 'hint', text: 'عەریز و کارمەند ل سەر ڤی ئامیری دهێنە پاراستن. کۆپییەکێ د «Files» یان iCloud دا بپارێزە. ئەڤ فایلە ب هەمان پاسۆۆرد هاتیە قفلکرن.' }),
+        h('p', { class: 'hint', id: 'bk-state', text: unbacked() ? ar(unbacked()) + ' عەریزە ژ کۆپییا دوماهیێ نوینە.' : 'هەمی عەریز د کۆپییا دوماهیێ دا نە.' }),
+        h('div', { class: 'row', style: 'margin:10px 0' },
+          h('button', { class: 'btn primary', id: 'bk-enc', type: 'button', text: 'کۆپییا پاراستنێ دروست بکە', onclick: async function () { await exportEnc(); renderMore(); } }),
+          h('button', { class: 'btn', id: 'bk-csv', type: 'button', text: 'هەمی عەریزان ب CSV', onclick: function () { saveFile('petitions-all-' + dkey(today()) + '.csv', csvOf(detailRows(records.slice().sort(byLeave)))); } })),
+        fld('ڤەگەڕاندن ژ فایلەکێ (.enc)', 'imp-enc', ef), ep,
+        h('button', { class: 'btn small', id: 'imp-enc-go', type: 'button', style: 'margin-top:8px', text: 'ڤەگەڕاندن', onclick: async function () {
+          if (!ef.files || !ef.files[0] || !ep.value) { toast('فایل و پاسۆۆردی بنڤیسە'); return; }
+          try { var r = await readEnc(ef.files[0], ep.value); importObject(JSON.parse(r.text)); } catch (e) { toast('پاسۆۆرد یان فایل یێ خەلەتە'); }
+        } })),
+        h('div', { class: 'card' }, h('h2', { text: 'گوهۆڕینا پاسۆۆردی' }), op, h('div', { style: 'margin-top:8px' }, np),
+          h('button', { class: 'btn small', id: 'pw-go', type: 'button', style: 'margin-top:8px', text: 'گوهۆڕین', onclick: async function () {
+            if (np.value.length < 8) { toast('پاسۆۆرد دڤێت ٨ پیتان کێمتر نەبیت'); return; }
+            if (await changePassword(op.value, np.value)) { op.value = ''; np.value = ''; }
+          } })));
+      return;
+    }
+    var imp = h('input', { type: 'file', accept: '.json,application/json', id: 'imp-file', class: 'in' });
+    imp.addEventListener('change', function () { if (imp.files && imp.files[0]) importFile(imp.files[0]); });
+    V.append(h('div', { class: 'card' }, h('h2', { text: 'کۆپییا پاراستنێ' }),
+      h('p', { class: 'hint', text: 'هەمی عەریزە، کارمەند و ڕێکخستن د یەک فایلی دا. کۆپییێن ژ ڤەرژنا کەڤن ژی دهێنە ڤەگەڕاندن.' }),
+      h('div', { class: 'row', style: 'margin:10px 0' },
+        h('button', { class: 'btn primary', id: 'bk-json', type: 'button', text: 'کۆپییا پاراستنێ دروست بکە', onclick: exportJson }),
+        h('button', { class: 'btn', id: 'bk-csv', type: 'button', text: 'هەمی عەریزان ب CSV', onclick: function () { saveFile('petitions-all-' + dkey(today()) + '.csv', csvOf(detailRows(records.slice().sort(byLeave)))); } })),
+      fld('ڤەگەڕاندن ژ کۆپییەکا پاراستنێ', 'imp-file', imp),
+      h('p', { class: 'hint', id: 'mode-note', text: store.mode === 'cloud' ? 'عەریزێن تە د هەژمارا تە دا دهێنە پاشەکەفتکرن و دشێی ژ هەر ئامیرەکی ڤەکەی.' : 'عەریزە تنێ د ڤی وێبگەرێدا دهێنە پاشەکەفتکرن. کۆپییەکا پاراستنێ دروست بکە.' })));
+  }
+
+  /* ---------- memory: cloud (db) when available, this browser always ---------- */
+  function whenIdle(key, fn) { if (inflight > 0) deferred[key] = fn; else fn(); }
+  function refreshLists() {
+    function fill(id, key) {
+      var seen = {}, dlst = $('#' + id); if (!dlst) return; clear(dlst);
+      employees.map(function (e) { return e[key]; }).concat(records.map(function (r) { return r[key]; })).forEach(function (v) { v = trimName(v); if (v && !seen[v]) { seen[v] = 1; dlst.append(h('option', { value: v })); } });
+    }
+    fill('dl-place', 'place'); fill('dl-title', 'title'); fill('dl-dept', 'dept');
+  }
+  function onData() {
+    refreshLists();
+    if (view === 'more') refreshMore();
+    else if (WEB && !encKey) return;
+    else if (scan) buildMain();
+    else if (!busy && step === 1 && !(document.activeElement && /^(INPUT|SELECT)$/.test(document.activeElement.tagName))) buildMain();
+  }
+  async function init() {
+    var cl = window.claude, user = null, id = null, db = null;
+    cloudPending = true;
+    try { if (cl && cl.use) { user = await cl.use('user'); id = user ? await user.id() : null; } } catch (e) { }
+    try { if (cl && cl.use && id) db = await cl.use('db'); } catch (e) { }
+    try { if (cl && cl.use) dl = await cl.use('downloads'); } catch (e) { }
+    if (db && id) {
+      try {
+        store.base = db.doc('data/users/' + id + '/profile'); store.mode = 'cloud';
+        await pushPend();
+        store.base.collection('petitions').orderBy('createdAt', 'desc').limit(1000).onSnapshot(function (snap) {
+          whenIdle('p', function () { records = mergeCloud('petitions', fromSnap(snap).map(normRec), records); sortRecords(); mirror(); onData(); });
+        }, function () { toast('نەشیا پاشەکەفتکری نوی بکەت'); });
+        store.base.collection('employees').limit(500).onSnapshot(function (snap) {
+          whenIdle('e', function () { employees = mergeCloud('employees', fromSnap(snap), employees); sortEmps(); mirror(); onData(); });
+        }, function () { });
+        store.base.collection('meta').doc('settings').onSnapshot(function (s) {
+          whenIdle('s', function () {
+            if (sTimer || !s.exists) return;
+            var local = settings; settings = normSettings(s.data());
+            Object.keys(local.serials || {}).forEach(function (y) { settings.serials[y] = Math.max(settings.serials[y] || 0, local.serials[y]); });
+            mirror();
+          });
+        }, function () { });
+        store.base.collection('meta').doc('stamp').onSnapshot(function (s) {
+          whenIdle('t', function () { if (pend['meta/stamp']) return; if (s.exists) { stamp = (s.data() || {}).img || null; mirror(); } });
+        }, function () { });
+        store.base.collection('meta').doc('sig').onSnapshot(function (s) {
+          whenIdle('g', function () { if (pend['meta/sig']) return; if (s.exists) { sigImg = (s.data() || {}).img || null; mirror(); } });
+        }, function () { });
+      } catch (e) { store.mode = 'local'; }
+    }
+    cloudPending = false;
+  }
+
+  /* ---------- start ---------- */
+  function boot() {
+    F = newForm(null);
+    scan = parseScan(); scanLoading = !!scan && !WEB;
+    refreshLists(); buildMain();
+    ready = true;
+  }
+  function start() {
+    WEB = !(window.claude && window.claude.use) && !!(window.crypto && crypto.subtle);
+    if (WEB) { dl = webDl; APP_URL = location.href.split('#')[0]; }
+    $('#btn-more').addEventListener('click', function () { setView(view === 'more' ? 'main' : 'more'); });
+    $('#viewer-close').addEventListener('click', closeViewer);
+    $('#modal').addEventListener('click', function (e) { if (e.target === $('#modal')) closeModal(); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { closeViewer(); closeModal(); } });
+    var over = 0;
+    window.addEventListener('dragover', function (e) { e.preventDefault(); });
+    window.addEventListener('dragenter', function (e) { e.preventDefault(); over++; var d = $('#drop'); if (d) d.classList.add('over'); });
+    window.addEventListener('dragleave', function () { over = Math.max(0, over - 1); if (!over) { var d = $('#drop'); if (d) d.classList.remove('over'); } });
+    window.addEventListener('drop', function (e) {
+      e.preventDefault(); over = 0; var d = $('#drop'); if (d) d.classList.remove('over');
+      if (WEB && !encKey) return;
+      var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+      if (f) importPdf(f);
+    });
+    document.addEventListener('visibilitychange', function () { if (document.hidden && WEB) webFlush(); else if (!document.hidden && view === 'main' && !busy) TODAY = new Date(); });
+    window.addEventListener('pagehide', function () { if (WEB) webFlush(); });
+    window.addEventListener('hashchange', function () { if (WEB && !encKey) return; var s = parseScan(); if (s) { scan = s; scanLoading = false; if (view === 'more') setView('main'); else buildMain(); window.scrollTo(0, 0); } });
+    if (WEB) { unlockFlow(boot); return; }
+    loadLocal(); boot();
+    init().then(function () { if (scanLoading) setTimeout(function () { scanLoading = false; if (scan && view === 'main') buildMain(); }, 1500); });
+  }
+  start();
+})();
+</script></body></html>
