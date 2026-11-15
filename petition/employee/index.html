@@ -248,6 +248,7 @@ input[type=range]{width:100%}
 
   /* ---------- people lookups ---------- */
   function trimName(n) { return String(n || '').replace(/\s+/g, ' ').trim(); }
+  function activeEmps() { return employees.filter(function (e) { return !e.gone; }); }
   function findEmp(id) { for (var i = 0; i < employees.length; i++) if (employees[i].id === id) return employees[i]; return null; }
   function findEmpByName(n) { n = trimName(n); if (!n) return null; for (var i = 0; i < employees.length; i++) if (trimName(employees[i].name) === n) return employees[i]; return null; }
   function entOf(name) { var e = findEmpByName(name); return e && typeof e.entitlement === 'number' ? e.entitlement : settings.entitlement; }
@@ -442,16 +443,17 @@ input[type=range]{width:100%}
     var closeTop = bodyTop + lines.length * LH + 100;
     centered(L.closing, W / 2, closeTop + LH / 2, 'rtl', false);
 
-    var l2 = st.title.trim() + '/ ' + st.name.trim();
+    var l1 = st.title.trim();
+    var l2 = st.name.trim();
     var l3 = L.deptLabel + st.dept.trim();
     var l4 = dstr(st.write, ' / ');
     var pitch = LH + 15, sigGap = 0;
     var off = 256, endY = closeTop + LH + off + LH / 2 + 3 * pitch + sigGap + LH / 2;
     if (endY > H - 40) off = Math.max(70, off - (endY - (H - 40)));
     var sigTop = closeTop + LH + off, sy = sigTop + LH / 2;
-    var widest = Math.max(wid(l2, 'rtl', false), wid(l3, 'rtl', false), 200);
+    var widest = Math.max(wid(l1, 'rtl', false), wid(l2, 'rtl', false), wid(l3, 'rtl', false), 200);
     var cxs = Math.max(PADX + 142, PADX + widest / 2);
-    centered(L.signer, cxs, sy, 'rtl', false);
+    centered(l1, cxs, sy, 'rtl', false);
     centered(l2, cxs, sy + pitch, 'rtl', false);
     centered(l3, cxs, sy + 2 * pitch, 'rtl', false);
     centered(l4, cxs, sy + 3 * pitch, 'ltr', false);
@@ -1159,7 +1161,7 @@ input[type=range]{width:100%}
   }
   function allNames() {
     var seen = {}, out = [];
-    employees.map(function (e) { return e.name; }).concat(records.map(function (r) { return r.name; })).forEach(function (n) { n = trimName(n); if (n && !seen[n]) { seen[n] = 1; out.push(n); } });
+    activeEmps().map(function (e) { return e.name; }).concat(records.map(function (r) { return r.name; })).forEach(function (n) { n = trimName(n); if (n && !seen[n]) { seen[n] = 1; out.push(n); } });
     return out.sort(function (a, b) { return a.localeCompare(b, 'ar'); });
   }
   function recById(id) { for (var i = 0; i < records.length; i++) if (records[i].id === id) return records[i]; return null; }
@@ -1335,6 +1337,7 @@ input[type=range]{width:100%}
       employees.push(e); sortEmps(); saveEmp(e);
     } else {
       var ch = false;
+      if (e.gone) { e.gone = false; ch = true; }
       ['title', 'dept', 'place'].forEach(function (k) {
         if (!d[k]) return;
         if (!e[k] || (!keep && e[k] !== d[k])) { e[k] = d[k]; ch = true; }
@@ -1342,6 +1345,22 @@ input[type=range]{width:100%}
       if (ch) saveEmp(e);
     }
     return e;
+  }
+  /* every name that appears in a petition but not in the list is added automatically (from its latest petition) */
+  function syncEmpsFromRecords() {
+    if (EMP) return;
+    var latest = {}, add = false;
+    records.forEach(function (r) {
+      var n = trimName(r.name); if (!n) return;
+      var t = r.write ? dkey(r.write) : '';
+      if (!latest[n] || t >= latest[n].t) latest[n] = { t: t, r: r };
+    });
+    Object.keys(latest).forEach(function (n) {
+      if (findEmpByName(n)) return;
+      var r = latest[n].r, e = { id: uid('e_'), name: n, title: r.title || '', dept: r.dept || '', place: r.place || '', entitlement: null, sig: null, createdAt: new Date().toISOString() };
+      employees.push(e); saveEmp(e); add = true;
+    });
+    if (add) sortEmps();
   }
   function peekSerial(y) {
     var mx = settings.serials[y] || 0;
@@ -1394,21 +1413,22 @@ input[type=range]{width:100%}
   function buildStep1(V) {
     var card = h('div', { class: 'card' }, h('h2', { text: 'ناڤێ کارمەندی هەلبژێرە' }));
     if (WEB && unbacked() >= 5) card.append(alertBox(ar(unbacked()) + ' عەریزە بێ کۆپییا پاراستنێ نە. ژ «زیاتر» ← «پاراستن» کۆپییەکێ بکە.', false));
-    employees.forEach(function (e) {
+    syncEmpsFromRecords();
+    activeEmps().forEach(function (e) {
       card.append(h('button', { class: 'ecard', type: 'button', 'data-emp': e.name, onclick: function () { pickEmp(e.name); step = 2; buildMain(); window.scrollTo(0, 0); } },
         h('div', {}, h('div', { class: 'n', text: e.name }), h('div', { class: 's', text: [e.title, e.dept].filter(Boolean).join(' · ') }))));
     });
-    var nw = h('div', { id: 'new-emp', hidden: employees.length > 0 && !F.isNew });
+    var nw = h('div', { id: 'new-emp', hidden: activeEmps().length > 0 && !F.isNew });
     nw.append(fld('ناڤێ کارمەندی', 'f-name', (function () { var i = h('input', { class: 'in', id: 'f-name', type: 'text', autocomplete: 'off', maxlength: '80', placeholder: 'ناڤێ کارمەندی' }); i.value = F.name; i.addEventListener('input', function () { F.name = i.value; i.removeAttribute('aria-invalid'); }); ctl.name = i; return i; })()),
       h('div', { class: 'grid2 stack' }, fld('ناڤنیشان', 'f-title', txtIn('title', 'f-title', 'وەک: کارگێر', 'dl-title')), fld('هوبە', 'f-dept', txtIn('dept', 'f-dept', 'هوبە', 'dl-dept'))),
       fld('جهێ کاری', 'f-place', txtIn('place', 'f-place', 'جهێ کاری / ئەو جهێ بو دچی', 'dl-place')),
       h('button', { class: 'btn primary big', id: 'btn-next1', type: 'button', text: 'بەردەوام بە', onclick: function () {
         var st = formState(), m = firstMissing(st);
         if (m) { var c = ctl[m]; if (c) { c.setAttribute('aria-invalid', 'true'); c.focus(); } toast('خانا فارغ پڕ بکە ئێکەم'); return; }
-        if (findEmpByName(st.name)) { toast('ئەڤ کارمەندە یێ هەی. ژ لیستێ هەلبژێرە.'); return; }
+        var ex_ = findEmpByName(st.name); if (ex_ && !ex_.gone) { toast('ئەڤ کارمەندە یێ هەی. ژ لیستێ هەلبژێرە.'); return; }
         F.isNew = false; step = 2; buildMain(); window.scrollTo(0, 0);
       } }));
-    if (employees.length) card.append(h('button', { class: 'btn', id: 'btn-newemp', type: 'button', style: 'width:100%;margin-top:4px', text: '+ کارمەندەکێ نوی', hidden: F.isNew, onclick: function () { pickEmp('__new'); nw.hidden = false; this.hidden = true; ctl.name.focus(); } }));
+    if (activeEmps().length) card.append(h('button', { class: 'btn', id: 'btn-newemp', type: 'button', style: 'width:100%;margin-top:4px', text: '+ کارمەندەکێ نوی', hidden: F.isNew, onclick: function () { pickEmp('__new'); nw.hidden = false; this.hidden = true; ctl.name.focus(); } }));
     card.append(nw);
     var impIn = h('input', { type: 'file', accept: '.pdf,application/pdf', id: 'imp-pdf', hidden: true });
     impIn.addEventListener('change', function () { if (impIn.files && impIn.files[0]) importPdf(impIn.files[0]); impIn.value = ''; });
@@ -1523,7 +1543,7 @@ input[type=range]{width:100%}
     if (m) {
       if (['title', 'dept', 'place'].indexOf(m) >= 0 && ctl.det) ctl.det.open = true;
       var c = ctl[m]; if (c) { c.setAttribute('aria-invalid', 'true'); c.focus(); }
-      toast(m === 'emp' ? 'کارمەندەکی هەلبژێرە' : 'خانا فارغ پڕ بکە ئێکەم'); return;
+      toast(m === 'emp' ? 'کارمەندەکی هەلبژێرە' : m === 'title' ? 'ناڤنیشان بنڤیسە (دکەڤیتە جهێ «داخازکەر» ل سەر عەریزێ)' : 'خانا فارغ پڕ بکە ئێکەم'); return;
     }
     if (st.type !== 'hourly' && st.days < 1) { toast('د ڤان ڕێکەفتان دا چ ڕۆژێن کاری نینن'); return; }
     busy = true; ctl.go.disabled = true; var label = ctl.go.textContent; ctl.go.textContent = 'PDF دهێتە دروستکرن…';
@@ -1607,7 +1627,7 @@ input[type=range]{width:100%}
 
   /* ---------- the «زیاتر» area ---------- */
   var view = 'main', moreTab = 'archive';
-  var MORE = [['archive', 'ئەرشیڤ'], ['report', 'ڕاپۆرت'], ['text', 'دەقێ عەریزێ'], ['settings', 'ڕێکخستن'], ['backup', 'پاراستن']];
+  var MORE = [['archive', 'ئەرشیڤ'], ['emps', 'کارمەند'], ['report', 'ڕاپۆرت'], ['text', 'دەقێ عەریزێ'], ['settings', 'ڕێکخستن'], ['backup', 'پاراستن']];
   var arch = { emp: null, y: null, m: 0, q: '' };
   var rep = { y: null, m: 0 };
   function setView(v) {
@@ -1628,6 +1648,7 @@ input[type=range]{width:100%}
     var body = h('div', { id: 'more-body' });
     V.append(tabs, body);
     if (moreTab === 'archive') renderArchive(body);
+    else if (moreTab === 'emps') renderEmployees(body);
     else if (moreTab === 'report') renderReport(body);
     else if (moreTab === 'text') renderText(body);
     else if (moreTab === 'settings') renderSettings(body);
@@ -1660,6 +1681,29 @@ input[type=range]{width:100%}
     q.addEventListener('input', function () { arch.q = q.value; paint(); });
     V.append(h('div', { class: 'card' }, h('div', { class: 'row', style: 'justify-content:space-between;margin-bottom:8px' }, h('h2', { style: 'margin:0', text: 'کارمەند و عەریزان' }),
       btn('+ کارمەندەکێ نوی', '', function () { openEmpEditor(null); }, 'a-add')), q), list);
+    paint();
+  }
+  /* employee list: filled automatically from the petitions; add, edit or remove people here */
+  var armEmp = null, empQ = '';
+  function renderEmployees(V) {
+    syncEmpsFromRecords();
+    var q = h('input', { class: 'in', id: 'e-q', type: 'search', placeholder: 'ب ناڤێ کارمەندی بگەڕە', autocomplete: 'off' }); q.value = empQ;
+    var list = h('div', { id: 'e-list' }), cnt = h('h2', { style: 'margin:0', id: 'e-count' });
+    function paint() {
+      clear(list); var s = trimName(empQ), all = activeEmps(), shown = all.filter(function (e) { return !s || e.name.indexOf(s) >= 0 || (e.title || '').indexOf(s) >= 0; });
+      cnt.textContent = 'لیستا کارمەندان (' + ar(all.length) + ')';
+      shown.forEach(function (e) {
+        var x = empStats(e.name);
+        list.append(h('button', { class: 'ecard', type: 'button', 'data-emp': e.name, onclick: function () { openEmpEditor(e); } },
+          h('div', {}, h('div', { class: 'n', text: e.name }), h('div', { class: 's', text: [e.title, e.dept].filter(Boolean).join(' · ') || 'ناڤنیشان نەهاتیە نڤیسین' })),
+          h('div', {}, h('b', { text: ar(x.cnt) }), h('div', { class: 's', text: 'عەریزە' }))));
+      });
+      if (!shown.length) list.append(h('p', { class: 'empty', text: all.length ? 'چ ئەنجام نینن.' : 'هێشتا چ کارمەند نینن. دەمێ عەریزەکێ دنڤیسی ناڤ ئۆتۆماتیک دهێتە زێدەکرن.' }));
+    }
+    q.addEventListener('input', function () { empQ = q.value; paint(); });
+    V.append(h('div', { class: 'card' }, h('div', { class: 'row', style: 'justify-content:space-between;margin-bottom:8px' }, cnt,
+      btn('+ کارمەندەکێ نوی', '', function () { openEmpEditor(null); }, 'e-add')),
+      h('p', { class: 'hint', text: 'ناڤ، ناڤنیشان و هوبە ژ هەر عەریزەکێ ئۆتۆماتیک دهێنە پاراستن. ب کلیککرنا ل سەر ناڤەکی دشێی بگوهۆڕی یان ژێببەی. ژێبرنا کارمەندی عەریزێن وی یێن کەڤن ژ ئەرشیڤێ ناژێبەت.' }), q), list);
     paint();
   }
   function pickYear(extra) {
@@ -1790,15 +1834,23 @@ input[type=range]{width:100%}
         h('button', { class: 'btn primary', id: 'st-save', type: 'button', text: 'پاشەکەفتکرن', onclick: function () {
           var name = trimName($('#st-name').value);
           if (!name) { toast('ناڤێ کارمەندی بنڤیسە'); return; }
-          var dup = findEmpByName(name); if (dup && (!ed || dup.id !== e.id)) { toast('ئەڤ ناڤە یێ هەی'); return; }
+          var dup = findEmpByName(name); if (dup && (!ed || dup.id !== e.id) && !(dup.gone && !ed)) { toast('ئەڤ ناڤە یێ هەی'); return; }
           var entV = $('#st-ent').value === '' ? null : clamp(+$('#st-ent').value, 0, 366);
-          var o = e || { id: uid('e_'), sig: null, createdAt: new Date().toISOString() }, oldName = ed ? e.name : null;
+          var o = e || (dup && dup.gone ? dup : { id: uid('e_'), sig: null, createdAt: new Date().toISOString() }), oldName = ed ? e.name : null;
+          o.gone = false;
           o.name = name; o.title = $('#st-title').value.trim(); o.dept = $('#st-dept').value.trim(); o.place = $('#st-place').value.trim(); o.entitlement = entV;
-          if (!ed) employees.push(o);
+          if (employees.indexOf(o) < 0) employees.push(o);
           if (ed && trimName(oldName) !== name) records.forEach(function (r) { if (trimName(r.name) === trimName(oldName)) { r.name = name; saveRec(r); } });
           sortEmps(); saveEmp(o); if (arch.emp && ed) arch.emp = name; closeModal(); refreshMore(); toast('کارمەند هاتە پاشەکەفتکرن');
         } }),
         ed ? btn(e.sig ? 'واژۆیا تایبەت: نوی بکە' : 'واژۆیا تایبەت بو ڤی کارمەندی', '', function () { closeModal(); openSigPad(function (url) { e.sig = url; saveEmp(e); refreshMore(); }, e.name, e.sig); }, 'st-sig') : null,
+        ed ? (function () {
+          var b = btn('ژێبرنا کارمەندی ژ لیستێ', 'danger', function () {
+            if (armEmp !== e.id) { armEmp = e.id; b.textContent = 'دووبارە کلیک بکە بو دلنیابوونێ'; setTimeout(function () { if (armEmp === e.id) { armEmp = null; b.textContent = 'ژێبرنا کارمەندی ژ لیستێ'; } }, 4000); return; }
+            armEmp = null; e.gone = true; saveEmp(e); if (arch.emp && trimName(arch.emp) === trimName(e.name)) arch.emp = null;
+            closeModal(); refreshMore(); toast('کارمەند ژ لیستێ هاتە ژێبرن (عەریزێن وی ل ئەرشیڤێ دمینن)');
+          }, 'st-del'); return b;
+        })() : null,
         btn('هەلوەشاندن', '', closeModal)));
     openModal(card);
   }
@@ -1896,7 +1948,6 @@ input[type=range]{width:100%}
     { k: 'b4', c: 0, label: 'دەق بەرێ جهێ کاری' },
     { k: 'b5', c: 1, label: 'دوماهیا ڕستەیێ' },
     { k: 'closing', c: 1, label: 'ڕستا داخستنێ' },
-    { k: 'signer', c: 1, label: 'ناڤێ واژۆکەری (داخازکەر)' },
     { k: 'deptLabel', c: 1, label: 'دەق بەرێ ناڤێ هوبێ' }
   ];
   function txNorm(v) { return String(v == null ? '' : v).replace(/\s+/g, ' ').trim(); }
