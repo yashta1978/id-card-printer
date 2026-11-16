@@ -76,7 +76,7 @@ input[type=range]{width:100%}
 </style></head><body>
 <div class="app" dir="rtl">
   <header class="top">
-    <h1>عەریزا مۆلەتێ <small id="ver" style="font-size:11px;font-weight:400;opacity:.55;direction:ltr;unicode-bidi:isolate">v10</small></h1>
+    <h1>عەریزا مۆلەتێ <small id="ver" style="font-size:11px;font-weight:400;opacity:.55;direction:ltr;unicode-bidi:isolate">v10.1</small></h1>
     <button class="btn" id="btn-more" type="button">زیاتر</button>
   </header>
   <main id="v-main"></main>
@@ -1413,6 +1413,11 @@ input[type=range]{width:100%}
   function buildStep1(V) {
     var card = h('div', { class: 'card' }, h('h2', { text: 'ناڤێ کارمەندی هەلبژێرە' }));
     if (WEB && unbacked() >= 5) card.append(alertBox(ar(unbacked()) + ' عەریزە بێ کۆپییا پاراستنێ نە. ژ «زیاتر» ← «پاراستن» کۆپییەکێ بکە.', false));
+    if (!EMP) {
+      var qc = h('input', { type: 'checkbox', id: 'opt-qr' }); qc.checked = !!settings.showQr;
+      qc.addEventListener('change', function () { settings.showQr = qc.checked; commitSettings(); });
+      card.append(h('label', { class: 'chk', id: 'opt-qr-l', style: 'margin:4px 0 10px' }, qc, T('QR ل سەر عەریزێ نیشان بدە')));
+    }
     syncEmpsFromRecords();
     activeEmps().forEach(function (e) {
       card.append(h('button', { class: 'ecard', type: 'button', 'data-emp': e.name, onclick: function () { pickEmp(e.name); step = 2; buildMain(); window.scrollTo(0, 0); } },
